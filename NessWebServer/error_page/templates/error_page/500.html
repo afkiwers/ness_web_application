@@ -1,0 +1,28 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    {% include 'header.html' %}
+    <title>Error 500</title>
+
+    <link type="text/css" rel="stylesheet" href="{% static 'error_page/css/style-error-pages.css' %}"/>
+
+</head>
+
+<body>
+
+<div id="notfound">
+    <div class="notfound">
+        <div class="notfound-500"></div>
+        <h1>500</h1>
+        <h2>Oops! Our Server Had a Little Hiccup</h2>
+        <p>Please try again. If it should not work; wait a little bit before you try it again.</p>
+        <a href="{% url 'home' %}">Back to homepage</a>
+    </div>
+</div>
+
+</body>
+
+</html>

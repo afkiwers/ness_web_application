@@ -1,0 +1,55 @@
+{% load static crispy_forms_tags %}
+
+<!doctype html>
+<html lang="en">
+<head>
+
+    <title>Ness D16x Alarm Control Panel - Dashboard</title>
+
+    {% include 'header.html' %}
+
+    {% block header %}{% endblock %}
+
+</head>
+
+<body>
+
+<div class="sticky-top">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+
+            <a class="navbar-brand logo img-thumbnail" href="{% url 'home' %}">
+                <img class="p-2" src="{% static 'assets/img/logo.png' %}" style="height: 85px;" alt="logo">
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item ">
+                        <a class="nav-link text-light" href="{% url 'home' %}">HOME</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" target="_blank" href="{% url 'home' %}api/">API</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" target="_blank" href="{% url 'home' %}admin/">ADMIN</a>
+                    </li>
+
+                </ul>
+            </div>
+
+        </div>
+    </nav>
+</div>
+
+<div class="p-2 p-md-5">
+    {% block content %}{% endblock content %}
+</div>
+
+</body>
+
+</html>

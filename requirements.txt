@@ -1,0 +1,7 @@
+djangorestframework
+markdown
+django-filter
+Django
+djangorestframework-api-key==2.*
+django-axes
+django-crispy-forms

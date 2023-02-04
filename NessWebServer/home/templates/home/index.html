@@ -1,0 +1,260 @@
+{% extends "base-template.html" %}
+
+{% block content %}
+
+    <div class="card mx-auto"  style="width: 22rem;" >
+         <h5 class="card-header text-center">{{ zone_heading }}</h5>
+
+        <div class="card-body">
+
+            <div class="d-grid gap-2 text-center pb-3">
+                <button type="button" name="" id="arming_state" disabled=1 class="btn btn-warning btn-lg btn-block">ARMING STATE UNKNOWN</button>
+    
+                <button type="button" name="" id="alarm_state" disabled=1 class="btn btn-success btn-lg btn-block">ALARM IN STANDBY</button>
+            </div>
+
+            {% for zone in zones %}
+                <h6>
+                    <span class="badge rounded-pill text-bg-warning mx-3" 
+                    name="zone_indicator"
+                    data-bs-toggle="tooltip" data-bs-placement="left" title="Unkonwn State"
+                    id="zone_indicator_{{ zone.zone_id }}">{{ zone.zone_id }}</span>{{ zone }}
+                </h6>
+            {% endfor %}
+
+
+            <div class="d-grid text-center pt-3">
+                <button type="button" name="" id="arm_alarm" data-bs-toggle="modal" data-bs-target="#armModal" class="btn btn-warning btn-lg btn-block text-uppercase">Arm</button>
+            </div>
+
+        </div>
+    </div>
+
+  
+    <!-- Modal -->
+    <div class="modal fade" id="armModal" tabindex="-1" aria-labelledby="armModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title text-uppercase" id="armModalLabel">User Keyboard</h5>
+                </div>
+
+                <div class="modal-body">
+                    <div class="d-grid gap-5 text-center pb-3">
+                        <button onclick="arming(this)" type="button" name="" id="arm_away" arming_cmd="A" class="text-uppercase btn btn-danger btn-lg btn-block">Away</button>
+
+                        <button onclick="arming(this)" type="button" name="" id="arm_home"  arming_cmd="H" class="text-uppercase btn btn-danger btn-lg btn-block">Home</button>
+
+                        <button onclick="arming(this)" type="button" name="" hidden=1 id="disarm"  arming_cmd="" class="text-uppercase btn btn-success btn-lg btn-block">Disarm</button>
+
+                        <div class="d-grid text-center gap-4">
+                            <div class="row">
+                                <div class="col">
+                                    <button type="button" class="btn btn-secondary btn-lg">1</button>
+                                </div>
+                                <div class="col">
+                                    <button type="button" class="btn btn-secondary btn-lg">2</button>
+                                </div>
+                                <div class="col">
+                                    <button type="button" class="btn btn-secondary btn-lg">3</button>
+                                </div>
+                            </div>
+                           
+                            <div class="row">
+                                <div class="col">
+                                    <button type="button" class="btn btn-secondary btn-lg">4</button>
+                                </div>
+                                <div class="col">
+                                    <button type="button" class="btn btn-secondary btn-lg">5</button>
+                                </div>
+                                <div class="col">
+                                    <button type="button" class="btn btn-secondary btn-lg">6</button>
+                                </div>
+                            </div>
+                    
+                            <div class="row">
+                                <div class="col">
+                                    <button type="button" class="btn btn-secondary btn-lg">7</button>
+                                </div>
+                                <div class="col">
+                                    <button type="button" class="btn btn-secondary btn-lg">8</button>
+                                </div>
+                                <div class="col">
+                                    <button type="button" class="btn btn-secondary btn-lg">9</button>
+                                </div>
+                            </div>
+                    
+                            <div class="row">
+                                <div class="col">
+                                    <button type="button" class="btn btn-secondary btn-lg">P</button>
+                                </div>
+                                <div class="col">
+                                    <button type="button" class="btn btn-secondary btn-lg">0</button>
+                                </div>
+                                <div class="col">
+                                    <button type="button" class="btn btn-secondary btn-lg" data-bs-dismiss="modal">E</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <input type="email" disabled=1 class="form-control" id="user_input">
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+<script>
+
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+
+    updateZones();
+    updateArmingState();
+    updateAlarmState();
+    setInterval(updateZones, 250);
+    setInterval(updateArmingState, 250);
+    setInterval(updateAlarmState, 250);
+
+    function checkForNewNotifications() {
+        $.get("{{ api_url_events }}",
+            {
+                latest_states: true
+            },
+            function (data, status) {
+                console.log(data)
+
+                data.forEach(e => {
+                    zone_status = document.getElementById("zone_indicator_" + e.applicable_id)
+
+                    if( e.event_id === 1 ){
+                        zone_status.setAttribute("class", "badge rounded-pill text-bg-success mx-3");
+                        zone_status.setAttribute("data-bs-original-title", "Ready");
+                    }else{
+                        zone_status.setAttribute("class", "badge rounded-pill text-bg-danger mx-3");
+                        zone_status.setAttribute("data-bs-original-title", "Sensor Triggered");
+
+                    }
+
+                });
+
+            });
+
+    }
+
+    function updateZones() {
+        $.get("{{ api_url_zones }}",
+            function (data, status) {
+                //console.log(data)
+
+                data.forEach(e => {
+                    zone_status = document.getElementById("zone_indicator_" + e.zone_id)
+
+                    if( e.sealed === 1 ){
+                        zone_status.setAttribute("class", "badge rounded-pill text-bg-success mx-3");
+                        zone_status.setAttribute("data-bs-original-title", "Ready");
+                    }else if( e.sealed === 0 ){
+                        zone_status.setAttribute("class", "badge rounded-pill text-bg-danger mx-3");
+                        zone_status.setAttribute("data-bs-original-title", "Sensor Triggered");
+                    }else{
+                        zone_status.setAttribute("class", "badge rounded-pill text-bg-warning mx-3");
+                        zone_status.setAttribute("data-bs-original-title", "Status Unknown");
+                    }
+
+                });
+
+            });
+
+    }
+
+    function updateArmingState() {
+        $.get("{{ api_url_events }}",
+            {
+                latest_arm_state: true
+            },
+            function (data, status) {
+                console.log(data);
+
+                data.forEach(e => {
+                    arming_state = document.getElementById("arming_state")
+                    arming_state.innerHTML = e.event.description
+
+                    if( e.event.event_id === 0x2f ){
+                        arming_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-success");
+                        arming_state.setAttribute("data-bs-original-title", "Ready");
+                    } else if( e.event.event_id >= 0x24 &&  e.event.event_id <= 0x2e ){
+                        arming_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-danger");
+                        arming_state.setAttribute("data-bs-original-title", "Ready");
+                    } else {
+                        arming_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-warning");
+                        arming_state.setAttribute("data-bs-original-title", "Ready");
+                    }
+
+                });
+
+            });
+    }
+
+    function updateAlarmState() {
+        $.get("{{ api_url_events }}",
+            {
+                latest_alarm_state: true
+            },
+            function (data, status) {
+                console.log(data);
+
+                data.forEach(e => {
+                    alarm_state = document.getElementById("alarm_state")
+                    
+
+                    if( e.event.event_id === 0x31 ){
+                        alarm_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-danger");
+
+                        alarm_state.innerHTML = e.event.description
+
+                    }else{
+                        alarm_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-success");
+
+                        alarm_state.innerHTML = "ALARM IN STANDBY"
+                    }
+
+                });
+
+            });
+
+    }
+
+    function arming(e){
+        console.log(e.getAttribute("id"), e.getAttribute("arming_cmd"))
+
+        fetch("{{ api_url_events }}", {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                "arming": true,
+                "arming_cmd": e.getAttribute("arming_cmd")
+            })
+        })
+        .then(response => response.json())
+        .then(response => console.log(JSON.stringify(response)))
+    }
+
+</script>
+
+
+{% endblock content %}

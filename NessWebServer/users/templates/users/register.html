@@ -1,0 +1,36 @@
+{% extends "base-template.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+
+    <main class="page register-user">
+        <section class="clean-block clean-form dark">
+            <div class="container">
+                <div class="block-heading">
+                    <h2 class="text-info">Register Today!</h2>
+                    <p>Please use our form provided below to register.</p>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <fieldset class="form-group">
+                        {{ form|crispy }}
+                    </fieldset>
+
+                    <div class="form-group">
+                        <button class="btn btn-outline-info" type="submit">Sign Up</button>
+                    </div>
+
+                    <div class="border-top pt-3">
+                        <small class="text-muted">
+                            Already Have An Account? <a class="ml-2" href="{% url 'login' %}">Sign In</a>
+                        </small>
+                    </div>
+                </form>
+
+            </div>
+        </section>
+
+    </main>
+
+{% endblock content %}
