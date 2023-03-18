@@ -1,0 +1,38 @@
+#docker-compose.yml
+# Last changed 04/04/2020
+# Andre F. K. Iwers
+
+#    https://medium.com/@pentacent/nginx-and-lets-encrypt-with-docker-in-less-than-5-minutes-b4b8a60d3a71
+# command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+version: '3.2'
+
+services:
+
+  django:
+    image: aioz:django
+    build: ./webapp
+    volumes:
+      - ./webapp:/webapp
+      - ./log/gunicorn/:/var/log/gunicorn/
+    ports:
+      - "8001:8000"
+    networks:
+      - default
+
+  nginx:
+    image: nginx:latest
+    build: ./nginx
+    depends_on:
+      - django
+    ports:
+      - "60:80"
+    volumes:
+      - ./webapp/static-files:/var/www/static
+      - ./webapp/media-files:/var/www/media
+      - ./log/nginx/:/var/log/nginx/
+    networks:
+      - default
+
+networks:
+  default:
