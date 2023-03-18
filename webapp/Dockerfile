@@ -1,5 +1,6 @@
 # pull official base image
-FROM python:3.7-alpine
+FROM python:3.9.0-alpine3.12
+
 #FROM debian:wheezy
 
 # When this Dockerfile was last refreshed
