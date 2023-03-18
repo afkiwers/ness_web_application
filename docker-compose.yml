@@ -16,7 +16,7 @@ services:
       - ./webapp:/webapp
       - ./log/gunicorn/:/var/log/gunicorn/
     ports:
-      - "8001:8000"
+      - "8011:8000"
     networks:
       - default
 
@@ -26,7 +26,7 @@ services:
     depends_on:
       - django
     ports:
-      - "60:80"
+      - "61:80"
     volumes:
       - ./webapp/static-files:/var/www/static
       - ./webapp/media-files:/var/www/media
