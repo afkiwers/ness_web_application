@@ -8,12 +8,14 @@ https://docs.djangoproject.com/en/4.1/howto/deployment/wsgi/
 """
 
 import os
-from ness.setup import setup
+# from ness.setup import setup
 
 from django.core.wsgi import get_wsgi_application
+
+from webapp import settings
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'webapp.settings')
 
 application = get_wsgi_application()
 
-setup()
+# setup()

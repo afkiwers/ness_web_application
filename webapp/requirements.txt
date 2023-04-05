@@ -8,3 +8,5 @@ django-crispy-forms
 django-timezone-field
 mysqlclient
 nessclient
+crispy-bootstrap5
+gunicorn
