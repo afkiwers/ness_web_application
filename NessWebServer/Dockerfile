@@ -9,19 +9,19 @@ ENV REFRESHED_AT 2020-04-04
 # set environment varibles
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-ENV WEBAPP_DIR=/NessWebServer
+ENV NESS_WEB_SERVER_DIR=/NessWebServer
 
 ENV LIBRARY_PATH=/lib:/usr/lib
 
 RUN mkdir -p /var/log/gunicorn
 RUN mkdir -p /var/log/crontab
 
-RUN mkdir $WEBAPP_DIR
+RUN mkdir $NESS_WEB_SERVER_DIR
 
 # set work directory
-WORKDIR $WEBAPP_DIR
+WORKDIR $NESS_WEB_SERVER_DIR
 
-ADD requirements.txt $WEBAPP_DIR/
+ADD requirements.txt $NESS_WEB_SERVER_DIR/
 
 RUN apk add --no-cache mariadb-dev build-base
 
@@ -34,13 +34,9 @@ RUN apk --no-cache add --virtual build-dependencies \
     jpeg-dev\
 	zlib-dev \
 	python3-dev \
-#	libmysqlclient-dev \
-#	libssl-dev \
-#	libmariadbclient-dev \
-#	libssl-dev\
     && pip install -r requirements.txt
 
-ADD . $WEBAPP_DIR/
+ADD . $NESS_WEB_SERVER_DIR/
 
 # copy entrypoint.sh
 COPY ./entrypoint.sh ./entrypoint.sh
