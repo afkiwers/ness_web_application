@@ -11,9 +11,9 @@ services:
 
   django:
     image: aioz:django
-    build: ./webapp
+    build: ./NessWebServer
     volumes:
-      - ./webapp:/webapp
+      - ./NessWebServer:/NessWebServer
       - ./log/gunicorn/:/var/log/gunicorn/
     ports:
       - "8011:8000"
@@ -28,8 +28,8 @@ services:
     ports:
       - "61:80"
     volumes:
-      - ./webapp/static-files:/var/www/static
-      - ./webapp/media-files:/var/www/media
+      - ./NessWebServer/static-files:/var/www/static
+      - ./NessWebServer/media-files:/var/www/media
       - ./log/nginx/:/var/log/nginx/
     networks:
       - default

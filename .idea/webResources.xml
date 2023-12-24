@@ -8,6 +8,7 @@
             <path value="file://$PROJECT_DIR$/NessWebServer/error_page/static" />
             <path value="file://$PROJECT_DIR$/NessWebServer/ness/static" />
             <path value="file://$PROJECT_DIR$/webapp/web_resources" />
+            <path value="file://$PROJECT_DIR$/webapp/ness/static" />
           </resourceRoots>
         </entryData>
       </entry>
