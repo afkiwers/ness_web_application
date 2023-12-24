@@ -1,5 +1,5 @@
 #docker-compose.yml
-# Last changed 04/04/2020
+# Last changed 24/12/2023
 # Andre F. K. Iwers
 
 #    https://medium.com/@pentacent/nginx-and-lets-encrypt-with-docker-in-less-than-5-minutes-b4b8a60d3a71
@@ -10,7 +10,7 @@ version: '3.2'
 services:
 
   django:
-    image: aioz:django
+    image: ness_web_server:django
     build: ./NessWebServer
     volumes:
       - ./NessWebServer:/NessWebServer

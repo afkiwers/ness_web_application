@@ -1,3 +1,6 @@
+import datetime
+
+from nessclient.packet import CommandType
 from rest_framework.authentication import BasicAuthentication, TokenAuthentication
 from rest_framework.response import Response
 
@@ -5,7 +8,9 @@ from rest_framework import viewsets, status
 
 from NessWebServer.api.viewsets import CsrfExemptSessionAuthentication
 from ness.api.serializers import EventDataSerializer, ZoneSerializer, NessPacketSerializer, DeviceSerializer
-from ness.models import *
+from ness.models import Event, Zone, Device
+
+from django.db.models import Q
 
 
 class EventDataViewSet(viewsets.ModelViewSet):

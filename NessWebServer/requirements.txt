@@ -1,5 +1,6 @@
 djangorestframework
 markdown
+crispy-bootstrap5
 django-filter
 Django
 djangorestframework-api-key==2.*
@@ -8,5 +9,4 @@ django-crispy-forms
 django-timezone-field
 mysqlclient
 nessclient
-crispy-bootstrap5
 gunicorn
