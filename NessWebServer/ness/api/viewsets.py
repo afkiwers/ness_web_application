@@ -1,5 +1,3 @@
-from enum import Enum
-
 from rest_framework.authentication import BasicAuthentication, TokenAuthentication
 from rest_framework.response import Response
 
