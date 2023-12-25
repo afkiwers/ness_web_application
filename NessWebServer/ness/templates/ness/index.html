@@ -141,17 +141,25 @@
 
         function checkForConectivity() {
 
-            $.get("{{ connectivity }}",
-                {},
-                function (data, status) {
+            try {
+                $.get("{{ connectivity }}",
+                    {},
+                    function (data, status) {
+                        console.log('checkForConectivity()', data)
 
-                    if (data.connection_valid) {
-                        $('#connectivity').modal('hide');
-                    } else {
+                        if (data.connection_valid) {
+                            $('#connectivity').modal('hide');
+                        }
+
+                    })
+                    .fail(function () {
                         $('#connectivity').modal('show');
-                    }
+                    });
 
-                });
+            } catch (e) {
+                $('#connectivity').modal('show');
+            }
+
 
         }
 
