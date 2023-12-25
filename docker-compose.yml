@@ -10,7 +10,7 @@ version: '3.2'
 services:
 
   django:
-    image: ness_web_server:django
+    image: ness_web:django
     build: ./NessWebServer
     volumes:
       - ./NessWebServer:/NessWebServer
@@ -26,7 +26,7 @@ services:
     depends_on:
       - django
     ports:
-      - "61:80"
+      - "62:80"
     volumes:
       - ./NessWebServer/static-files:/var/www/static
       - ./NessWebServer/media-files:/var/www/media

@@ -25,8 +25,8 @@ SECRET_KEY = 'django-insecure-gwb)l$7yyf66-4brabm14pqucz40(9zs7i!irx)gbmzo$gd$^3
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['*']
-
+ALLOWED_HOSTS = ['*', 'https://ness.aioz.com.au']
+CSRF_TRUSTED_ORIGINS = ['https://ness.aioz.com.au', ]
 
 # Application definition
 
