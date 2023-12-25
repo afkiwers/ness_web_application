@@ -9,8 +9,6 @@ __pycache__/
 #custom
 .idea/
 .vscode/
-/static-files/
-/media-files/
 
 # Distribution / packaging
 .Python
@@ -133,3 +131,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+NessWebServer/static-files/
+NessWebServer/media-files/
+
