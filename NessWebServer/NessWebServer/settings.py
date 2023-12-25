@@ -214,19 +214,17 @@ In this case, however, the hacking part of it can be taken a bit further: Axes i
 people from brute forcing your Django site.
 """
 # Django Axes - Settings
-AXES_FAILURE_LIMIT = 10  # Max failures until user gets blocked
+AXES_FAILURE_LIMIT = 5  # Max failures until user gets blocked
 AXES_RESET_ON_SUCCESS = True  # Reset counter after user logged in successfully
-AXES_USE_USER_AGENT = True
-AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP = True
+AXES_LOCKOUT_PARAMETERS = ["ip_address", ["username", "user_agent"]]
 AXES_LOCKOUT_URL = 'locked-out'
 AXES_COOLOFF_TIME = 1  # in hours
 
 # refer to the Django request and response objects documentation
-AXES_META_PRECEDENCE_ORDER = [
+AXES_IPWARE_META_PRECEDENCE_ORDER = [
     'HTTP_X_FORWARDED_FOR',
     'REMOTE_ADDR',
 ]
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
-
 CRISPY_TEMPLATE_PACK = "bootstrap5"

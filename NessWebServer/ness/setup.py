@@ -1,6 +1,4 @@
 from ness.models import Zone
-from django.db.models import Q
-
 
 def setup():
 
