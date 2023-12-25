@@ -3,7 +3,6 @@ from django.db import models
 import logging
 
 from django.urls import reverse
-from django.utils.translation import gettext as _
 
 from nessclient import BaseEvent
 from nessclient.packet import Packet, CommandType
@@ -13,21 +12,21 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Zone(models.Model):
-    zone_id = models.IntegerField(_("Zone ID"), unique=True)
+    zone_id = models.IntegerField("Zone ID", unique=True)
 
-    description = models.CharField(_("Description"), max_length=50)
+    description = models.CharField("Description", max_length=50)
 
-    sealed = models.IntegerField(_("Current State of Zone (Sealed/Unsealed)"), default=-1)
+    sealed = models.IntegerField("Current State of Zone (Sealed/Unsealed)", default=-1)
 
-    excluded = models.BooleanField(_("Zone Excluded"), default=False)
+    excluded = models.BooleanField("Zone Excluded", default=False)
 
-    zone_address = models.IntegerField(_("Zone Address"), default=0)
+    zone_address = models.IntegerField("Zone Address", default=0)
 
-    hidden = models.BooleanField(_("Hide from display"), default=False)
+    hidden = models.BooleanField("Hide from display", default=False)
 
     class Meta:
-        verbose_name = _("Zone")
-        verbose_name_plural = _("Zones")
+        verbose_name = "Zone"
+        verbose_name_plural = "Zones"
 
     def __str__(self):
         return self.description
@@ -37,22 +36,22 @@ class Zone(models.Model):
 
 
 class Event(models.Model):
-    raw_data = models.CharField(_("Raw Data"), max_length=50, default="")
+    raw_data = models.CharField("Raw Data", max_length=50, default="")
 
     # derived from raw data
-    timestamp = models.DateTimeField(_("Timestamp"), blank=True, null=True)
+    timestamp = models.DateTimeField("Timestamp", blank=True, null=True)
 
-    type = models.CharField(_("Type"), max_length=50)
-    type_id = models.IntegerField(_("Type ID"), blank=True, null=True)
-    data = models.CharField(_("Data Field"), max_length=60)
+    type = models.CharField("Type", max_length=50)
+    type_id = models.IntegerField("Type ID", blank=True, null=True)
+    data = models.CharField("Data Field", max_length=60)
 
     # data = models.CharField(_("ASCII Data"), max_length=60, help_text="Bytes are coded in ASCII. E.g. -> 0x54 = 54", default="")
-    user_input_command = models.BooleanField(_("User Input Command"), default=False, help_text="Is this a user input command?")
-    input_command_received = models.BooleanField(_("Received"), default=False, help_text="Has this event been received by the Ness Security System?")
+    user_input_command = models.BooleanField("User Input Command", default=False, help_text="Is this a user input command?")
+    input_command_received = models.BooleanField("Received", default=False, help_text="Has this event been received by the Ness Security System?")
 
     class Meta:
-        verbose_name = _("Event")
-        verbose_name_plural = _("Events")
+        verbose_name = "Event"
+        verbose_name_plural = "Events"
 
     def __str__(self):
         if self.type:
@@ -139,8 +138,8 @@ class Event(models.Model):
 
 
 class Device(models.Model):
-    device_name = models.CharField(_("Device Name"), max_length=50, default="")
+    device_name = models.CharField("Device Name", max_length=50, default="")
 
-    ip = models.CharField(_("IP Address"), max_length=50, default="")
+    ip = models.CharField("IP Address", max_length=50, default="")
 
-    software_version = models.CharField(_("Software Version"), max_length=50, default="")
+    software_version = models.CharField("Software Version", max_length=50, default="")

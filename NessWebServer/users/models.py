@@ -9,4 +9,4 @@ class CustomUser(AbstractUser):
     # Make sure emails are unique
     email = models.EmailField(unique=True)
 
-    panel_code = models.CharField(_("Ness Panel User Code"), max_length=4, default='0000')
+    panel_code = models.CharField("Ness Panel User Code", max_length=4, default='0000')

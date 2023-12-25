@@ -8,17 +8,17 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Error(models.Model):
-    function_name = models.CharField(_("Function"), max_length=150)
+    function_name = models.CharField("Function", max_length=150)
 
-    description = models.TextField(_("Description"))
+    description = models.TextField("Description")
 
-    code_line = models.IntegerField(_("Code Line)"))
+    code_line = models.IntegerField("Code Line")
 
-    file_name = models.CharField(_("Function"), max_length=150)
+    file_name = models.CharField("Function", max_length=150)
 
     class Meta:
-        verbose_name = _("Error")
-        verbose_name_plural = _("Error")
+        verbose_name = "Error"
+        verbose_name_plural = "Error"
 
     def __str__(self):
         return self.function_name
