@@ -15,7 +15,7 @@ def home(request):
     context = {
         'api_url_events': '/api/ness-events/',
         'api_url_zones': '/api/ness-zones/',
-        'connectivity': '/connectivity',
+        'connectivity': '/connectivity/',
 
         'zones': zones,
         'zone_heading': "Available Zones"
@@ -24,7 +24,6 @@ def home(request):
     return render(request, 'ness/index.html', context)
 
 
-@login_required
 def connectivity(request):
     response_data = {
         'connection_valid': True,

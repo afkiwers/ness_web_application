@@ -144,7 +144,6 @@
             $.get("{{ connectivity }}",
                 {},
                 function (data, status) {
-                    console.log('checkForConectivity: ', data)
 
                     if (data.connection_valid) {
                         $('#connectivity').modal('hide');
