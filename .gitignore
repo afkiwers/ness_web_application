@@ -134,3 +134,4 @@ dmypy.json
 NessWebServer/static-files/
 NessWebServer/media-files/
 
+NessWebServer/NessWebServer/static-files/
