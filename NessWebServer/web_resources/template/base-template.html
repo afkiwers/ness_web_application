@@ -1,0 +1,56 @@
+{% load static crispy_forms_tags %}
+
+<!doctype html>
+<html lang="en">
+<head>
+
+    <title>Ness D8x/D16x Alarm Control Panel - Dashboard</title>
+
+    {% include 'header.html' %}
+
+    {% block header %}{% endblock %}
+
+</head>
+
+<body>
+
+<nav class="navbar navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">Ness Security Panel</a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasDarkNavbar" aria-controls="offcanvasDarkNavbar">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="offcanvas offcanvas-end text-bg-dark" tabindex="-1" id="offcanvasDarkNavbar" aria-labelledby="offcanvasDarkNavbarLabel">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="offcanvasDarkNavbarLabel">Navigation Menu</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+
+                    <li class="nav-item ">
+                        <a class="nav-link text-light" href="{% url 'home' %}">HOME</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" target="_blank" href="{% url 'home' %}api/">API</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" target="_blank" href="{% url 'home' %}admin/">ADMIN</a>
+                    </li>
+
+                </ul>
+
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="container pt-md-4 pt-2">
+    {% block content %}{% endblock content %}
+</div>
+
+</body>
+
+</html>

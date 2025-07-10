@@ -1,0 +1,38 @@
+#docker-compose.yml
+# Last changed 24/12/2023
+# Andre F. K. Iwers
+
+#    https://medium.com/@pentacent/nginx-and-lets-encrypt-with-docker-in-less-than-5-minutes-b4b8a60d3a71
+# command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+version: '3.2'
+
+services:
+
+  django:
+    image: ness_web:django
+    build: ./NessWebServer
+    volumes:
+      - ./NessWebServer:/NessWebServer
+      - ./log/gunicorn/:/var/log/gunicorn/
+    ports:
+      - "8011:8000"
+    networks:
+      - default
+
+  nginx:
+    image: nginx:latest
+    build: ./nginx
+    depends_on:
+      - django
+    ports:
+      - "62:80"
+    volumes:
+      - ./NessWebServer/static-files:/var/www/static
+      - ./NessWebServer/media-files:/var/www/media
+      - ./log/nginx/:/var/log/nginx/
+    networks:
+      - default
+
+networks:
+  default:

@@ -1,0 +1,36 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    {% include 'header.html' %}
+    <title>Error 404</title>
+
+    <link type="text/css" rel="stylesheet" href="{% static 'error_page/css/style-error-pages.css' %}"/>
+</head>
+
+<body>
+
+<div id="notfound">
+    <div class="notfound">
+        <div class="notfound-404"></div>
+        <h1>404</h1>
+        <h2>Oops! There was an error.</h2>
+
+        {% if messages %}
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        {% else %}
+            <p>Sorry but the page you were looking for does not exist, has been removed, re-named or is temporarily
+                unavailable.</p>
+        {% endif %}
+
+        <a href="{% url 'home' %}">Back to homepage</a>
+    </div>
+</div>
+
+</body>
+
+</html>

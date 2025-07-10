@@ -1,0 +1,14 @@
+djangorestframework
+markdown
+crispy-bootstrap5
+django-filter
+Django
+djangorestframework-api-key==2.*
+django-axes
+django-crispy-forms
+django-timezone-field
+mysqlclient
+nessclient
+gunicorn
+pytz
+django-environ

@@ -1,0 +1,43 @@
+{% extends "base-template-login.html" %}
+{% load i18n static crispy_forms_tags %}
+
+{% block header %}
+{% endblock header %}
+
+{% block content %}
+
+    <div id="cover" class="min-vh-100 bg-dark">
+        <div id="cover-caption">
+            <div class="container">
+                <div class="row text-white">
+
+                    <div class="col-xl-5 col-lg-6 col-md-8 col-sm-10 mx-auto text-center form p-4">
+                        <h4 class="pt-5">User Login</h4>
+
+                        <form method="POST">
+                            {% csrf_token %}
+
+                            <fieldset class="form-group text-left p-2">
+                                {{ form|crispy }}
+
+                                <div class="p-2">
+                                    <small>
+                                        Forgot your Password?
+                                        <a class="ml-2 text-danger" href="{% url 'password_reset' %}">Reset Now!</a>
+                                    </small>
+
+                                </div>
+                            </fieldset>
+
+                            <div class="form-group">
+                                <button class="btn btn-outline-warning float-right" type="submit">Log In</button>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock content %}
