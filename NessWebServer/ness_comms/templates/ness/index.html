@@ -132,11 +132,9 @@
         })
 
         updateZones();
-        updateArmingState();
-        updateAlarmState();
+        updateNESSSecurityPanelStatus();
         setInterval(updateZones, 500);
-        setInterval(updateArmingState, 500);
-        setInterval(updateAlarmState, 500);
+        setInterval(updateNESSSecurityPanelStatus, 500);
         setInterval(checkForConectivity, 1000);
 
         function checkForConectivity() {
@@ -178,7 +176,7 @@
 
         function checkForNewNotifications() {
 
-            $.get("{{ api_url_events }}",
+            $.get("{{ api_url_ness_system_status }}",
                 {
                     latest_states: true
                 },
@@ -206,7 +204,10 @@
             $.get("{{ api_url_zones }}",
                 function (data, status) {
 
+                    console.log(data);
+
                     data.forEach(e => {
+
                         let zone_status = document.getElementById("zone_indicator_" + e.zone_id)
                         let exclude_status = document.getElementById("zone_exclude_" + e.zone_id)
 
@@ -228,7 +229,6 @@
 
                         } else {
                             exclude_status.innerHTML = "Exclude"
-
                         }
 
                     });
@@ -237,8 +237,8 @@
 
         }
 
-        function updateArmingState() {
-            $.get("{{ api_url_events }}",
+        function updateNESSSecurityPanelStatus() {
+            $.get("{{ api_url_ness_system_status }}",
                 {
                     'latest_arm_state': true
                 },
@@ -255,15 +255,27 @@
                     }
 
                     data.forEach(e => {
+
                         var arming_state = document.getElementById("arming_state")
-                        try {
-                            arming_state.innerHTML = e.type.split(".")[1];
-                        } catch (e) {
-                            console.log(e);
-                            arming_state.innerHTML = e.type;
+                        var alarm_state = document.getElementById("alarm_state")
+
+                        if (e.alarm_siren_on) {
+                            alarm_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-danger");
+                            alarm_state.innerHTML = "SIREN ACTIVE"
+                        } else {
+                            alarm_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-success");
+                            alarm_state.innerHTML = "SIREN IN STANDBY"
                         }
 
-                        if (e.type_id === 0x2f) {
+                        if (e.is_armed_away) {
+                            arming_state.innerHTML = "ARMED AWAY"
+                        } else if (e.is_armed_home) {
+                            arming_state.innerHTML = "ARMED HOME"
+                        } else if(e.is_disarmed){
+                             arming_state.innerHTML = "DISARMED"
+                        }
+
+                       if (e.is_disarmed){
                             arming_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-success");
                             arming_state.setAttribute("data-bs-original-title", "Ready");
 
@@ -275,7 +287,7 @@
                                 b.setAttribute("hidden", "");
                             });
 
-                        } else if (e.type_id >= 0x24 && e.type_id <= 0x2e) {
+                       } else if (e.is_armed_home || e.is_armed_away) {
                             arming_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-danger pulse");
                             arming_state.setAttribute("data-bs-original-title", "Ready");
 
@@ -305,33 +317,6 @@
                 });
         }
 
-        function updateAlarmState() {
-            $.get("{{ api_url_events }}",
-                {
-                    'latest_alarm_state': true,
-                },
-                function (data, status) {
-
-                    data.forEach(e => {
-                        alarm_state = document.getElementById("alarm_state")
-
-                        if (e.type_id === 0x31) {
-                            alarm_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-danger");
-
-                            alarm_state.innerHTML = e.type
-
-                        } else {
-                            alarm_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-success");
-
-                            alarm_state.innerHTML = "ALARM IN STANDBY"
-                        }
-
-                    });
-
-                });
-
-        }
-
         function arming(e, disarm) {
 
             isArming = !disarm; // Global var which is share with updateArmingState()
@@ -340,7 +325,7 @@
             let spinner = e.firstElementChild;
             spinner.removeAttribute("hidden");
 
-            fetch("{{ api_url_events }}", {
+            fetch("{{ api_url_ness_system_status }}", {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -368,7 +353,7 @@
 
             e.setAttribute("disabled", "");
 
-            fetch("{{ api_url_events }}", {
+            fetch("{{ api_url_ness_system_status }}", {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -393,7 +378,7 @@
 
         function status() {
 
-            fetch("{{ api_url_events }}", {
+            fetch("{{ api_url_ness_system_status }}", {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',

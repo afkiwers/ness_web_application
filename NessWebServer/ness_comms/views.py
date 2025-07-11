@@ -13,7 +13,7 @@ def home(request):
     zones = Zone.objects.all()
 
     context = {
-        'api_url_events': '/api/ness_comms-events/',
+        'api_url_ness_system_status': '/api/ness_comms-system-status/',
         'api_url_zones': '/api/ness_comms-zones/',
         'connectivity': '/connectivity/',
 

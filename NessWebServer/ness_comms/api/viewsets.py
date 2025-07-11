@@ -1,24 +1,30 @@
 import datetime
+import logging
 import zoneinfo
 
-from nessclient.packet import CommandType
+import pytz
+from nessclient import BaseEvent
+from nessclient.packet import CommandType, Packet
+from nessclient.event import SystemStatusEvent, ZoneUpdate, MiscellaneousAlarmsUpdate, ArmingUpdate, StatusUpdate
+
 from rest_framework.authentication import BasicAuthentication, TokenAuthentication
 from rest_framework.response import Response
 
 from rest_framework import viewsets, status
 
 from NessWebServer.api.viewsets import CsrfExemptSessionAuthentication
-from ness_comms.api.serializers import EventDataSerializer, ZoneSerializer, NessPacketSerializer, DeviceSerializer
-from ness_comms.models import Event, Zone, Device
+from ness_comms.api.serializers import NessSystemStatusSerializer, ZoneSerializer, NessPacketSerializer
+from ness_comms.models import Event, Zone, SystemStatus
 
 from django.db.models import Q
 
+_LOGGER = logging.getLogger(__name__)
 
-class EventDataViewSet(viewsets.ModelViewSet):
+class NessSystemStatusViewSet(viewsets.ModelViewSet):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication, TokenAuthentication)
     # permission_classes = [IsAuthenticated | HasAPIKey]
 
-    serializer_class = EventDataSerializer
+    serializer_class = NessSystemStatusSerializer
     queryset = Event.objects.all()
 
     http_method_names = ['get', 'post', 'patch']
@@ -34,23 +40,8 @@ class EventDataViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(user_input_command=True, input_command_received=False).order_by("timestamp")
             return queryset
 
-        if latest_arm_state:
-            # self.serializer_class = OutputEventDataSerializerFullTree
-
-            queryset = queryset.filter(Q(type_id__gte=0x24), Q(type_id__lte=0x30)).order_by("-timestamp")
-            if queryset:
-                return queryset.exclude(~Q(id=queryset.first().id))
-            else:
-                return queryset
-
-        if latest_alarm_state:
-            # self.serializer_class = OutputEventDataSerializerFullTree
-
-            queryset = queryset.filter(Q(type_id__gte=0x31), Q(type_id__lte=0x32)).order_by("-timestamp")
-            if queryset:
-                return queryset.exclude(~Q(id=queryset.first().id))
-            else:
-                return queryset
+        elif latest_arm_state or latest_alarm_state:
+            return SystemStatus.objects.all()
 
         return queryset
 
@@ -118,31 +109,130 @@ class ZoneViewSet(viewsets.ModelViewSet):
     http_method_names = ['get']
 
 
-class DeviceViewSet(viewsets.ModelViewSet):
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication, TokenAuthentication)
-    # permission_classes = [IsAuthenticated | HasAPIKey]
-
-    serializer_class = DeviceSerializer
-    queryset = Device.objects.all()
-
-
-class NessRawDataViewSet(viewsets.ViewSet):
-    # Required for the Browsable API renderer to have a nice form.
+class NessCommsRawDataViewSet(viewsets.ViewSet):
     serializer_class = NessPacketSerializer
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request):
+
         serializer = NessPacketSerializer(data=request.data, many=False)
 
+        print(request.data)
+
         if serializer.is_valid():
+
             raw_data = serializer.validated_data.get('raw_data')
+            ness_pcb_ip = serializer.validated_data.get('ip')
+            fw = serializer.validated_data.get('fw')
 
-            event = Event.objects.get_or_create(
-                raw_data=raw_data
-            )
+            # Get the current state of the NESS PCB
+            ness_status = SystemStatus.objects.get_or_create(id=1)[0]
 
-            if not event[1]:
-                event[0].save()
+            # save IP
+            ness_status.ness2wifi_ip = ness_pcb_ip
+            ness_status.ness2wifi_fw_version = fw
 
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            ness_status.save()
+
+            try:
+                # Use the nessclient lib to decode the data
+                pkt = Packet.decode(raw_data)
+                pkt.timestamp = pkt.timestamp.replace(tzinfo=pytz.timezone('Australia/Hobart'))
+
+                event = BaseEvent.decode(pkt)
+
+                if event.type in (
+                        SystemStatusEvent.EventType.SEALED,
+                        SystemStatusEvent.EventType.UNSEALED
+                ):
+                    try:
+                        zone = Zone.objects.get(address=list(ZoneUpdate.Zone)[event.zone].value)
+                        zone.sealed = event.type.value
+                        zone.save()
+
+                        print(f'{zone} updated')
+
+                    except Exception as e:
+                        print(f"Error updating zone status: {str(e)}")
+                        _LOGGER.warning(f"Error updating zone status: {str(e)}", exc_info=True)
+
+                if event.type in (
+                        SystemStatusEvent.EventType.ARMED_AWAY,
+                        SystemStatusEvent.EventType.ARMED_HOME,
+                        SystemStatusEvent.EventType.EXIT_DELAY_START,
+                        SystemStatusEvent.EventType.EXIT_DELAY_END,
+                        SystemStatusEvent.EventType.DISARMED,
+                        SystemStatusEvent.EventType.OUTPUT_ON,
+                        SystemStatusEvent.EventType.OUTPUT_OFF
+                ):
+
+                    try:
+
+                        # Is the siren active?
+                        if event.type == SystemStatusEvent.EventType.OUTPUT_ON:
+                            ness_status.alarm_siren_on = True
+                        elif event.type == SystemStatusEvent.EventType.OUTPUT_OFF:
+                            ness_status.alarm_siren_on = False
+
+                        # Is the delay active?
+                        if event.type == SystemStatusEvent.EventType.EXIT_DELAY_START:
+                            ness_status.arming_delayed_active = True
+                        elif event.type == SystemStatusEvent.EventType.EXIT_DELAY_END:
+                            ness_status.arming_delayed_active = False
+
+                        # What arming state are we using
+                        if event.type == SystemStatusEvent.EventType.ARMED_HOME:
+                            ness_status.is_armed_home = True
+                            ness_status.is_armed_away = False
+                            ness_status.is_disarmed = False
+                        elif event.type == SystemStatusEvent.EventType.ARMED_AWAY:
+                            ness_status.is_armed_home = False
+                            ness_status.is_armed_away = True
+                            ness_status.is_disarmed = False
+                        elif event.type == SystemStatusEvent.EventType.DISARMED:
+                            ness_status.is_armed_home = False
+                            ness_status.is_armed_away = False
+                            ness_status.is_disarmed = True
+
+                        ness_status.save()
+
+                    except Exception as e:
+                        print(f"Error updating arming state: {str(e)}")
+                        _LOGGER.warning(f"Error updating arming state: {str(e)}", exc_info=True)
+
+                    pass
+
+                elif event.type is ZoneUpdate:
+                    print("ZoneUpdate")
+
+                    if event.request_id == StatusUpdate.RequestID.ZONE_EXCLUDED:
+                        zones = Zone.objects.all()
+
+                        # reset the ones which are not excluded
+                        for zone in zones:
+                            # default to included
+                            zone.excluded = False
+                            for z in event.included_zones:
+                                if int(str(z).split('_')[1]) == zone.zone_id:
+                                    zone.excluded = True
+
+                            zone.save()
+
+
+                    print(f'ZoneUpdate...')
+
+                elif event.type is MiscellaneousAlarmsUpdate:
+                    print(f'MiscellaneousAlarmsUpdate...')
+
+                elif event.type is ArmingUpdate:
+                    print(f'ArmingUpdate...')
+
+
+
+
+            except Exception as e:
+                print(F'Decoding Error: {str(e)}')
+                return Response({"error": f"Failed to decode data: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response({"ip": ness_pcb_ip}, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

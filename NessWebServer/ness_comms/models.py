@@ -12,24 +12,32 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Zone(models.Model):
-    zone_id = models.IntegerField("Zone ID", unique=True)
 
-    description = models.CharField("Description", max_length=50)
+    zone_id = models.IntegerField(unique=True, blank=True, null=True)
+
+    name = models.CharField("Zone Name, displayed to the user", max_length=50)
 
     sealed = models.IntegerField("Current State of Zone (Sealed/Unsealed)", default=-1)
 
     excluded = models.BooleanField("Zone Excluded", default=False)
 
-    zone_address = models.IntegerField("Zone Address", default=0)
+    address = models.IntegerField("Zone Address, unique from the nessclient lib", default=0)
 
-    hidden = models.BooleanField("Hide from display", default=False)
+    hidden = models.BooleanField("Hide from the user display", default=False)
 
     class Meta:
         verbose_name = "Zone"
         verbose_name_plural = "Zones"
 
     def __str__(self):
-        return self.description
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if self.zone_id is None:
+            # Get the current maximum zone_id and increment
+            max_id = Zone.objects.aggregate(models.Max('zone_id'))['zone_id__max'] or 0
+            self.zone_id = max_id + 1
+        super().save(*args, **kwargs)
 
     def get_absolute_url(self):
         return reverse("Zone_detail", kwargs={"pk": self.pk})
@@ -38,9 +46,7 @@ class Zone(models.Model):
 class Event(models.Model):
     raw_data = models.CharField("Raw Data", max_length=50, default="")
 
-    # derived from raw data
     timestamp = models.DateTimeField("Timestamp", blank=True, null=True)
-
     type = models.CharField("Type", max_length=50)
     type_id = models.IntegerField("Type ID", blank=True, null=True)
     data = models.CharField("Data Field", max_length=60)
@@ -137,9 +143,45 @@ class Event(models.Model):
         super(Event, self).save(*args, **kwargs)
 
 
-class Device(models.Model):
-    device_name = models.CharField("Device Name", max_length=50, default="")
+class SystemStatus(models.Model):
 
-    ip = models.CharField("IP Address", max_length=50, default="")
+    class Meta:
+        verbose_name_plural = "SystemStatus"
 
-    software_version = models.CharField("Software Version", max_length=50, default="")
+    # ness2wifi bridge information
+    ness2wifi_ip = models.CharField("Ness WiFi IP", max_length=50, default="")
+    ness2wifi_fw_version = models.CharField("Ness 2 WiFi bridge Firmware Version", max_length=50, default="")
+
+    is_armed_home = models.BooleanField(default=False)
+    is_armed_away = models.BooleanField(default=False)
+    is_disarmed = models.BooleanField(default=False)
+
+    arming_delayed_active = models.BooleanField(default=False)
+
+    alarm_siren_on = models.BooleanField(default=False)
+
+    last_updated_at = models.DateTimeField(auto_now=True)  # Updates on every save
+
+    def save(self, *args, **kwargs):
+        # Ensure only one is True
+        true_flags = [
+            self.is_armed_home,
+            self.is_armed_away,
+            self.is_disarmed
+        ]
+
+        if true_flags.count(True) > 1:
+            raise ValueError("Only one state can be True at a time.")
+
+        # Automatically clear others if one is set
+        if self.is_armed_home:
+            self.is_armed_away = False
+            self.is_disarmed = False
+        elif self.is_armed_away:
+            self.is_armed_home = False
+            self.is_disarmed = False
+        elif self.is_disarmed:
+            self.is_armed_home = False
+            self.is_armed_away = False
+
+        super().save(*args, **kwargs)
