@@ -20,96 +20,6 @@ from django.db.models import Q
 
 _LOGGER = logging.getLogger(__name__)
 
-class UserInputViewSet(viewsets.ModelViewSet):
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication, TokenAuthentication)
-    # permission_classes = [IsAuthenticated | HasAPIKey]
-
-    serializer_class = UserInputSerializer
-    queryset = UserInput.objects.all()
-
-    http_method_names = ['get', 'post', 'patch']
-
-    def get_queryset(self):
-        queryset = UserInput.objects.all()
-
-        latest_arm_state = self.request.query_params.get('latest_arm_state', None)
-        latest_alarm_state = self.request.query_params.get('latest_alarm_state', None)
-        system_cmds_only = self.request.query_params.get('system_cmds_only', None)
-
-        if system_cmds_only:
-            queryset = queryset.filter(user_input_command=True, input_command_received=False).order_by("timestamp")
-            return queryset
-
-        elif latest_arm_state or latest_alarm_state:
-            return SystemStatus.objects.all()
-
-        return queryset
-
-    def create(self, request, *args, **kwargs):
-
-        # Command from WebUI
-        if request.data.get("input_command", False):
-            cmds = []
-
-            if request.data.get("manual_exclude_zone"):
-                if request.data.get("single_exclude_cmd"):
-                    # See page 28 - NESS D8 V4.5 CONTROL PANEL - USER MANUAL
-                    # We exclude each zone individually as we listen to single exclude commands
-                    selected_zone = Zone.objects.get(zone_id=request.data.get("zone_id"))
-
-                    cmds.append(f'X{request.user.panel_code}E') # enter Exclude mode, works in armed and disarmed mode
-                    cmds.append(f'{selected_zone.zone_id}E')    # Send command of zone to exclude
-                    cmds.append(f'E')                           # exit Exclude mode
-                    cmds.append(f'S06')                         # request zone status after toggle
-
-                else:
-                    # TODO: handle multiple excludes at once
-                    pass
-
-            if request.data.get("arming"):
-
-                if request.data.get("disarm"):
-                    cmds.append(f'{request.user.panel_code}E')
-
-                    # request zone status disarming to reflect current state of zones
-                    cmds.append(f'S06')
-                else:
-                    cmds.append(f'{request.data.get("arming_cmd")}{request.user.panel_code}E')
-
-            if request.data.get("get_status_update"):
-                cmds.append(f'S06')
-
-            # check if we received a valid command, if so save to datab
-            if len(cmds):
-                for cmd in cmds:
-                    event = UserInput.objects.get_or_create(
-                        data=cmd,
-                        type=CommandType.USER_INTERFACE,
-                        user_input_command=True
-                    )[0]
-
-                    event.timestamp = datetime.datetime.now().astimezone(tz=zoneinfo.ZoneInfo("Australia/Hobart"))
-                    event.input_command_received = False
-                    event.type_id = CommandType.USER_INTERFACE.value
-                    event.save()
-
-                return Response(request.data, status=status.HTTP_201_CREATED)
-
-        elif request.data.get("ness2wifi_ack", False):
-            try:
-                user_input = UserInput.objects.get(id=request.data.get("id", None))
-
-                # Save ack
-                user_input.input_command_received = True
-                user_input.save()
-
-            except UserInput.DoesNotExist:
-                pass
-
-        # if nothing matches return bad request
-        return Response(None, status=status.HTTP_400_BAD_REQUEST)
-
-
 class NessSystemStatusViewSet(viewsets.ModelViewSet):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication, TokenAuthentication)
     # permission_classes = [IsAuthenticated | HasAPIKey]
@@ -125,6 +35,7 @@ class NessSystemStatusViewSet(viewsets.ModelViewSet):
         latest_arm_state = self.request.query_params.get('latest_arm_state', None)
         latest_alarm_state = self.request.query_params.get('latest_alarm_state', None)
         system_cmds_only = self.request.query_params.get('system_cmds_only', None)
+        check_exclusions = self.request.query_params.get('check_exclusions', None)
 
         if system_cmds_only:
             queryset = queryset.filter(user_input_command=True, input_command_received=False).order_by("timestamp")
@@ -132,6 +43,16 @@ class NessSystemStatusViewSet(viewsets.ModelViewSet):
 
         elif latest_arm_state or latest_alarm_state:
             return SystemStatus.objects.all()
+
+        elif check_exclusions:
+            user_input = UserInput.objects.get_or_create(
+                data="S06",
+                type=CommandType.USER_INTERFACE,
+                user_input_command=True
+            )[0]
+
+            user_input.input_command_received = False
+            user_input.save()
 
         return queryset
 
@@ -343,3 +264,28 @@ class NessCommsRawDataViewSet(viewsets.ViewSet):
             return Response({"ip": ness_pcb_ip}, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class UserInputViewSet(viewsets.ModelViewSet):
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication, TokenAuthentication)
+    # permission_classes = [IsAuthenticated | HasAPIKey]
+
+    serializer_class = UserInputSerializer
+    queryset = UserInput.objects.all()
+
+    http_method_names = ['get', 'post', 'patch']
+
+    def create(self, request, *args, **kwargs):
+
+        # Command from ESP32
+        if request.data.get("ness2wifi_ack", False):
+            try:
+                user_input = UserInput.objects.get(id=request.data.get("id", None))
+
+                # Save ack
+                user_input.input_command_received = True
+                user_input.save()
+
+            except UserInput.DoesNotExist:
+                pass
+
+        return Response(None, status=status.HTTP_200_OK)

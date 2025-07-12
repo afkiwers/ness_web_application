@@ -8,36 +8,38 @@
 
 {% block content %}
 
-    <div class="mx-auto">
+    <div class="card mx-auto">
+        <h5 class="card-header text-center">{{ zone_heading }}</h5>
 
-        <div class="d-grid gap-2 text-center pb-3">
-            <button type="button" name="" id="arming_state" disabled=1 class="btn btn-warning btn-lg btn-block">ARMING STATE UNKNOWN</button>
+            <div class="d-grid gap-2 text-center m-3">
+                <button type="button" name="" id="arming_state" disabled=1 class="btn btn-warning btn-lg btn-block">ARMING STATE UNKNOWN</button>
 
-            <button type="button" name="" id="alarm_state" disabled=1 class="btn btn-success btn-lg btn-block">SIREN STATE UNKNOWN</button>
-        </div>
+                <button type="button" name="" id="alarm_state" disabled=1 class="btn btn-success btn-lg btn-block">SIREN STATE UNKNOWN</button>
+            </div>
 
-        {% for zone in zones %}
+            {% for zone in zones %}
 
-            <h6 {% if zone.hidden %}hidden {% endif %}>
+                <h6 {% if zone.hidden %}hidden {% endif %}>
 
-                <span class="badge rounded-pill text-bg-warning mx-3"
-                      name="zone_indicator"
-                      data-bs-toggle="tooltip" data-bs-placement="left" title="Unkonwn State"
-                      id="zone_indicator_{{ zone.zone_id }}">{{ zone.zone_id }}</span>
-                {{ zone }}
+                    <span class="badge rounded-pill text-bg-warning mx-3"
+                          name="zone_indicator"
+                          data-bs-toggle="tooltip" data-bs-placement="left" title="Unkonwn State"
+                          id="zone_indicator_{{ zone.zone_id }}">{{ zone.zone_id }}</span>
+                    {{ zone }}
 
-                <button class="badge rounded-pill text-bg-warning mx-3 text-uppercase border-0" style="float: right;"
-                        name="zone_exclude" zone_id={{ zone.zone_id }} zone_name="{{ zone }}" id="zone_exclude_{{ zone.zone_id }}" onclick="openAckModal(this)">Exclude
-                </button>
+                    <button class="badge rounded-pill text-bg-warning mx-3 text-uppercase border-0" style="float: right;"
+                            name="zone_exclude" zone_id={{ zone.zone_id }} zone_name="{{ zone }}" id="zone_exclude_{{ zone.zone_id }}" onclick="openAckModal(this)">Exclude
+                    </button>
 
-            </h6>
+                </h6>
 
-        {% endfor %}
+            {% endfor %}
 
-        <div class="d-grid text-center pt-3">
-            <button type="button" name="" id="arm_alarm" data-bs-toggle="modal" data-bs-target="#armModal" class="btn btn-warning btn-lg btn-block text-uppercase">User Keypad</button>
-        </div>
+            <div class="d-grid text-center p-3">
+                <button type="button" name="" id="arm_alarm" data-bs-toggle="modal" data-bs-target="#armModal" class="btn btn-warning btn-lg btn-block text-uppercase">User Keypad</button>
+            </div>
 
+         <div class="card-body">
     </div>
 
     <!-- Keypad Modal -->
@@ -127,10 +129,20 @@
         })
 
         updateZones();
+        checkExclusion();
         updateNESSSecurityPanelStatus();
         setInterval(updateZones, 500);
         setInterval(updateNESSSecurityPanelStatus, 500);
         setInterval(checkForConectivity, 1000);
+
+        function checkExclusion() {
+            $.get("{{ api_url_ness_system_status }}",
+                {
+                    'check_exclusions': true
+                },
+
+                function (data, status) { });
+        }
 
         function checkForConectivity() {
 
@@ -230,6 +242,7 @@
                             alarm_state.innerHTML = "SIREN ACTIVE"
                         } else {
                             alarm_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-success");
+                            alarm_state.setAttribute("hidden", true);
                             alarm_state.innerHTML = "SIREN IN STANDBY"
                         }
 

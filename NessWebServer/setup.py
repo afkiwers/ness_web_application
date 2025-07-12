@@ -11,7 +11,7 @@ def create_default_zones():
 
         zone_list = [
             "MAIN FLOOR PIRS",
-            "UPAIRAIRS PIRS",
+            "UPSTAIRS PIRS",
             "GARAGE PIRS",
             "SMOKE MAIN FLOOR",
             "BACKYARD DOOR",
@@ -23,7 +23,7 @@ def create_default_zones():
             "PANTRY WINDOW",
             "SMOKE DOWNSTAIRS",
             "LOWER FRONT DOOR",
-            "GARAGE ROLLER DO",
+            "GARAGE ROLLER DOOR",
             "BALCONY UPSTAIRS",
             "Unnamed Zone"
         ]
