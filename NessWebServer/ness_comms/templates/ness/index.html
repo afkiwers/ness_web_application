@@ -8,41 +8,36 @@
 
 {% block content %}
 
-    <div class="card mx-auto">
-        <h5 class="card-header text-center">{{ zone_heading }}</h5>
+    <div class="mx-auto">
 
-        <div class="card-body">
+        <div class="d-grid gap-2 text-center pb-3">
+            <button type="button" name="" id="arming_state" disabled=1 class="btn btn-warning btn-lg btn-block">ARMING STATE UNKNOWN</button>
 
-            <div class="d-grid gap-2 text-center pb-3">
-                <button type="button" name="" id="arming_state" disabled=1 class="btn btn-warning btn-lg btn-block">ARMING STATE UNKNOWN</button>
-
-                <button type="button" name="" id="alarm_state" disabled=1 class="btn btn-success btn-lg btn-block">ALARM IN STANDBY</button>
-            </div>
-
-            {% for zone in zones %}
-
-                <h6 {% if zone.hidden %}hidden {% endif %}>
-
-                    <span class="badge rounded-pill text-bg-warning mx-3"
-                          name="zone_indicator"
-                          data-bs-toggle="tooltip" data-bs-placement="left" title="Unkonwn State"
-                          id="zone_indicator_{{ zone.zone_id }}">{{ zone.zone_id }}</span>
-                    {{ zone }}
-
-                    <button class="badge rounded-pill text-bg-warning mx-3 text-uppercase border-0" style="float: right;"
-                            name="zone_exclude" zone_id={{ zone.zone_id }} zone_name="{{ zone }}" id="zone_exclude_{{ zone.zone_id }}" onclick="openAckModal(this)">Exclude
-                    </button>
-
-                </h6>
-
-            {% endfor %}
-
-
-            <div class="d-grid text-center pt-3">
-                <button type="button" name="" id="arm_alarm" data-bs-toggle="modal" data-bs-target="#armModal" class="btn btn-warning btn-lg btn-block text-uppercase">User Keypad</button>
-            </div>
-
+            <button type="button" name="" id="alarm_state" disabled=1 class="btn btn-success btn-lg btn-block">SIREN STATE UNKNOWN</button>
         </div>
+
+        {% for zone in zones %}
+
+            <h6 {% if zone.hidden %}hidden {% endif %}>
+
+                <span class="badge rounded-pill text-bg-warning mx-3"
+                      name="zone_indicator"
+                      data-bs-toggle="tooltip" data-bs-placement="left" title="Unkonwn State"
+                      id="zone_indicator_{{ zone.zone_id }}">{{ zone.zone_id }}</span>
+                {{ zone }}
+
+                <button class="badge rounded-pill text-bg-warning mx-3 text-uppercase border-0" style="float: right;"
+                        name="zone_exclude" zone_id={{ zone.zone_id }} zone_name="{{ zone }}" id="zone_exclude_{{ zone.zone_id }}" onclick="openAckModal(this)">Exclude
+                </button>
+
+            </h6>
+
+        {% endfor %}
+
+        <div class="d-grid text-center pt-3">
+            <button type="button" name="" id="arm_alarm" data-bs-toggle="modal" data-bs-target="#armModal" class="btn btn-warning btn-lg btn-block text-uppercase">User Keypad</button>
+        </div>
+
     </div>
 
     <!-- Keypad Modal -->
@@ -161,50 +156,9 @@
 
         }
 
-        function openAckModal(e) {
-
-            document.getElementById("ackModalBtnApply").removeAttribute("disabled");
-
-            document.getElementById("ackModalMessage").innerHTML = "Do you really want to toggle the exclude status of ZONE " + e.getAttribute("zone_id") +
-                " (" + e.getAttribute("zone_name") + ")";
-
-            document.getElementById("ackModalBtnApply").setAttribute("zone_id", e.getAttribute("zone_id"));
-
-            $('#ackModal').modal('toggle');
-
-        }
-
-        function checkForNewNotifications() {
-
-            $.get("{{ api_url_ness_system_status }}",
-                {
-                    latest_states: true
-                },
-                function (data, status) {
-
-                    data.forEach(e => {
-                        zone_status = document.getElementById("zone_indicator_" + e.applicable_id)
-
-                        if (e.event_id === 1) {
-                            zone_status.setAttribute("class", "badge rounded-pill text-bg-success mx-3");
-                            zone_status.setAttribute("data-bs-original-title", "Ready");
-                        } else {
-                            zone_status.setAttribute("class", "badge rounded-pill text-bg-danger mx-3");
-                            zone_status.setAttribute("data-bs-original-title", "Sensor Triggered");
-
-                        }
-
-                    });
-
-                });
-
-        }
-
         function updateZones() {
             $.get("{{ api_url_zones }}",
                 function (data, status) {
-
-                    console.log(data);
 
                     data.forEach(e => {
 
@@ -256,16 +210,10 @@
 
                     data.forEach(e => {
 
+                        console.log("updateNESSSecurityPanelStatus:", e);
+
                         var arming_state = document.getElementById("arming_state")
                         var alarm_state = document.getElementById("alarm_state")
-
-                        if (e.alarm_siren_on) {
-                            alarm_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-danger");
-                            alarm_state.innerHTML = "SIREN ACTIVE"
-                        } else {
-                            alarm_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-success");
-                            alarm_state.innerHTML = "SIREN IN STANDBY"
-                        }
 
                         if (e.is_armed_away) {
                             arming_state.innerHTML = "ARMED AWAY"
@@ -273,6 +221,16 @@
                             arming_state.innerHTML = "ARMED HOME"
                         } else if(e.is_disarmed){
                              arming_state.innerHTML = "DISARMED"
+                        } else{
+                            arming_state.innerHTML = "ERROR"
+                        }
+
+                        if (e.alarm_siren_on) {
+                            alarm_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-danger");
+                            alarm_state.innerHTML = "SIREN ACTIVE"
+                        } else {
+                            alarm_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-success");
+                            alarm_state.innerHTML = "SIREN IN STANDBY"
                         }
 
                        if (e.is_disarmed){
@@ -315,6 +273,19 @@
                     });
 
                 });
+        }
+
+        function openAckModal(e) {
+
+            document.getElementById("ackModalBtnApply").removeAttribute("disabled");
+
+            document.getElementById("ackModalMessage").innerHTML = "Do you really want to toggle the exclude status of ZONE " + e.getAttribute("zone_id") +
+                " (" + e.getAttribute("zone_name") + ")";
+
+            document.getElementById("ackModalBtnApply").setAttribute("zone_id", e.getAttribute("zone_id"));
+
+            $('#ackModal').modal('toggle');
+
         }
 
         function arming(e, disarm) {

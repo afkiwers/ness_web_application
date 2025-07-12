@@ -43,21 +43,25 @@ class Zone(models.Model):
         return reverse("Zone_detail", kwargs={"pk": self.pk})
 
 
-class Event(models.Model):
+class UserInput(models.Model):
+
+    class Meta:
+        verbose_name = "User Input"
+        verbose_name_plural = "User Inputs"
+
     raw_data = models.CharField("Raw Data", max_length=50, default="")
 
     timestamp = models.DateTimeField("Timestamp", blank=True, null=True)
+
     type = models.CharField("Type", max_length=50)
+
     type_id = models.IntegerField("Type ID", blank=True, null=True)
+
     data = models.CharField("Data Field", max_length=60)
 
-    # data = models.CharField(_("ASCII Data"), max_length=60, help_text="Bytes are coded in ASCII. E.g. -> 0x54 = 54", default="")
     user_input_command = models.BooleanField("User Input Command", default=False, help_text="Is this a user input command?")
-    input_command_received = models.BooleanField("Received", default=False, help_text="Has this event been received by the Ness Security System?")
 
-    class Meta:
-        verbose_name = "Event"
-        verbose_name_plural = "Events"
+    input_command_received = models.BooleanField("Received", default=False, help_text="Has this event been received by the Ness Security System?")
 
     def __str__(self):
         if self.type:
@@ -84,69 +88,15 @@ class Event(models.Model):
             )
 
             self.raw_data = packet.encode()
-
-        elif not self.user_input_command:
-            try:
-                pkt = Packet.decode(self.raw_data)
-                event = BaseEvent.decode(pkt)
-
-                self.data = pkt.data
-
-                if pkt.start & 0x04:
-                    self.timestamp = pkt.timestamp.replace(tzinfo=pytz.timezone('Australia/Hobart'))
-
-            except Exception:
-                _LOGGER.warning("Failed to decode packet", exc_info=True)
-
-                # don't save data if error occurs
-                return
-
-            # Check for zone updates!
-            if event.__class__ is ZoneUpdate:
-                if event.request_id == StatusUpdate.RequestID.ZONE_EXCLUDED:
-                    zones = Zone.objects.all()
-
-                    # reset the ones which are not excluded
-                    for zone in zones:
-                        # default to included
-                        zone.excluded = False
-                        for z in event.included_zones:
-                            if int(str(z).split('_')[1]) == zone.zone_id:
-                                zone.excluded = True
-
-                        zone.save()
-
-            # Check for zone event!
-            elif event.__class__ is SystemStatusEvent:
-                if event.type.value in (SystemStatusEvent.EventType.SEALED.value, SystemStatusEvent.EventType.UNSEALED.value):
-                    print(event)
-                    try:
-                        zone = Zone.objects.get(zone_id=event.zone)
-                        zone.sealed = event.type.value
-                        zone.save()
-
-                        print(f'Zone {zone.zone_id} ({zone}) updated...')
-
-                    except Exception:
-                        _LOGGER.warning("Error updating zone status", exc_info=True)
-
-                    # discard dataset and return without saving!
-                    return
-
-                if event.type.value in (SystemStatusEvent.EventType.ARMED_HOME.value, SystemStatusEvent.EventType.ARMED_AWAY.value, SystemStatusEvent.EventType.DISARMED.value):
-                    print(event)
-
-                # save type of event
-                self.type = str(event.type)
-                self.type_id = str(event.type.value)
-
-        super(Event, self).save(*args, **kwargs)
+            
+        super(UserInput, self).save(*args, **kwargs)
 
 
 class SystemStatus(models.Model):
 
     class Meta:
-        verbose_name_plural = "SystemStatus"
+        verbose_name = "System Status"
+        verbose_name_plural = "System Status"
 
     # ness2wifi bridge information
     ness2wifi_ip = models.CharField("Ness WiFi IP", max_length=50, default="")

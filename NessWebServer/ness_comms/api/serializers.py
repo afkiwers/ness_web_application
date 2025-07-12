@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from ness_comms.models import Zone, SystemStatus
+
+from ness_comms.models import Zone, SystemStatus, UserInput
 
 class ZoneSerializer(serializers.ModelSerializer):
     class Meta:
@@ -10,6 +11,12 @@ class ZoneSerializer(serializers.ModelSerializer):
 class NessSystemStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = SystemStatus
+        fields = '__all__'
+
+
+class UserInputSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserInput
         fields = '__all__'
 
 
