@@ -9,9 +9,9 @@
 {% block content %}
 
     <div class="card mx-auto">
-        <h5 class="card-header text-center">{{ zone_heading }}</h5>
+        <h5 class="card-header text-center">Available Zones</h5>
 
-            <div class="d-grid gap-2 text-center m-3">
+            <div class="d-grid gap-2 text-center p-3">
                 <button type="button" name="" id="arming_state" disabled=1 class="btn btn-warning btn-lg btn-block">ARMING STATE UNKNOWN</button>
 
                 <button type="button" name="" id="alarm_state" disabled=1 class="btn btn-success btn-lg btn-block">SIREN STATE UNKNOWN</button>
@@ -38,8 +38,6 @@
             <div class="d-grid text-center p-3">
                 <button type="button" name="" id="arm_alarm" data-bs-toggle="modal" data-bs-target="#armModal" class="btn btn-warning btn-lg btn-block text-uppercase">User Keypad</button>
             </div>
-
-         <div class="card-body">
     </div>
 
     <!-- Keypad Modal -->
@@ -147,7 +145,7 @@
         function checkForConectivity() {
 
             try {
-                $.get("{{ connectivity }}",
+                $.get("{% url 'api-ness_comms-app-list' %}",
                     {},
                     function (data, status) {
                         console.log('checkForConectivity()', data)
@@ -169,7 +167,7 @@
         }
 
         function updateZones() {
-            $.get("{{ api_url_zones }}",
+            $.get("{% url 'api-ness_comms-zones-list' %}",
                 function (data, status) {
 
                     data.forEach(e => {
@@ -204,7 +202,7 @@
         }
 
         function updateNESSSecurityPanelStatus() {
-            $.get("{{ api_url_ness_system_status }}",
+            $.get("{% url 'api-system-status-list' %}",
                 {
                     'latest_arm_state': true
                 },
@@ -288,6 +286,54 @@
                 });
         }
 
+        function manual_exclude(e) {
+
+            // display spinner
+            let spinner = e.firstElementChild;
+            spinner.removeAttribute("hidden");
+
+            e.setAttribute("disabled", "");
+
+            fetch("{% url 'api-system-status-list' %}", {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    "input_command": true,
+                    "manual_exclude_zone": true,
+                    "single_exclude_cmd": true,
+                    "zone_id": e.getAttribute("zone_id")
+                })
+            })
+                .then(response => response.json())
+                .then(response => {
+                    console.log(JSON.stringify(response))
+
+                    spinner.setAttribute("hidden", "");
+
+                    $('#ackModal').modal('toggle');
+                })
+        }
+
+        function status() {
+
+            fetch("{% url 'api-system-status-list' %}", {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    "input_command": true,
+                    "get_status_update": true
+                })
+            })
+                .then(response => response.json())
+                .then(response => console.log(JSON.stringify(response)))
+        }
+
         function openAckModal(e) {
 
             document.getElementById("ackModalBtnApply").removeAttribute("disabled");
@@ -327,54 +373,6 @@
                         console.log(JSON.stringify(response));
                     }
                 )
-        }
-
-        function manual_exclude(e) {
-
-            // display spinner
-            let spinner = e.firstElementChild;
-            spinner.removeAttribute("hidden");
-
-            e.setAttribute("disabled", "");
-
-            fetch("{{ api_url_ness_system_status }}", {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    "input_command": true,
-                    "manual_exclude_zone": true,
-                    "single_exclude_cmd": true,
-                    "zone_id": e.getAttribute("zone_id")
-                })
-            })
-                .then(response => response.json())
-                .then(response => {
-                    console.log(JSON.stringify(response))
-
-                    spinner.setAttribute("hidden", "");
-
-                    $('#ackModal').modal('toggle');
-                })
-        }
-
-        function status() {
-
-            fetch("{{ api_url_ness_system_status }}", {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    "input_command": true,
-                    "get_status_update": true
-                })
-            })
-                .then(response => response.json())
-                .then(response => console.log(JSON.stringify(response)))
         }
 
     </script>

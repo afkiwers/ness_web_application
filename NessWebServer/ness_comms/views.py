@@ -10,23 +10,8 @@ from ness_comms.models import Zone
 @login_required
 # @log_error_in_db
 def home(request):
-    zones = Zone.objects.all()
-
     context = {
-        'api_url_ness_system_status': '/api/ness_comms-system-status/',
-        'api_url_zones': '/api/ness_comms-zones/',
-        'connectivity': '/connectivity/',
-
-        'zones': zones,
-        'zone_heading': "Available Zones"
+        'zones': Zone.objects.all(),
     }
 
     return render(request, 'ness/index.html', context)
-
-
-def connectivity(request):
-    response_data = {
-        'connection_valid': True,
-    }
-
-    return HttpResponse(json.dumps(response_data), content_type="application/json")
