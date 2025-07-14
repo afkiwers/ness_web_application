@@ -11,33 +11,40 @@
     <div class="card mx-auto">
         <h5 class="card-header text-center">Available Zones</h5>
 
-            <div class="d-grid gap-2 text-center p-3">
-                <button type="button" name="" id="arming_state" disabled=1 class="btn btn-warning btn-lg btn-block">ARMING STATE UNKNOWN</button>
+        <div class="d-grid gap-2 text-center p-3">
+            <button type="button" name="" id="arming_state" disabled=1 class="btn btn-warning btn-lg btn-block">ARMING
+                STATE UNKNOWN
+            </button>
 
-                <button type="button" name="" id="alarm_state" disabled=1 class="btn btn-success btn-lg btn-block">SIREN STATE UNKNOWN</button>
-            </div>
+            <button type="button" name="" id="alarm_state" disabled=1 class="btn btn-success btn-lg btn-block">SIREN
+                STATE UNKNOWN
+            </button>
+        </div>
 
-            {% for zone in zones %}
+        {% for zone in zones %}
 
-                <h6 {% if zone.hidden %}hidden {% endif %}>
+            <h6 {% if zone.hidden %}hidden {% endif %}>
 
                     <span class="badge rounded-pill text-bg-warning mx-3"
                           name="zone_indicator"
                           data-bs-toggle="tooltip" data-bs-placement="left" title="Unkonwn State"
                           id="zone_indicator_{{ zone.zone_id }}">{{ zone.zone_id }}</span>
-                    {{ zone }}
+                {{ zone }}
 
-                    <button class="badge rounded-pill text-bg-warning mx-3 text-uppercase border-0" style="float: right;"
-                            name="zone_exclude" zone_id={{ zone.zone_id }} zone_name="{{ zone }}" id="zone_exclude_{{ zone.zone_id }}" onclick="openAckModal(this)">Exclude
-                    </button>
+                <button class="badge rounded-pill text-bg-warning mx-3 text-uppercase border-0" style="float: right;"
+                        name="zone_exclude" zone_id={{ zone.zone_id }} zone_name="{{ zone }}"
+                        id="zone_exclude_{{ zone.zone_id }}" onclick="openAckModal(this)">Exclude
+                </button>
 
-                </h6>
+            </h6>
 
-            {% endfor %}
+        {% endfor %}
 
-            <div class="d-grid text-center p-3">
-                <button type="button" name="" id="arm_alarm" data-bs-toggle="modal" data-bs-target="#armModal" class="btn btn-warning btn-lg btn-block text-uppercase">User Keypad</button>
-            </div>
+        <div class="d-grid text-center p-3">
+            <button type="button" name="" id="arm_alarm" data-bs-toggle="modal" data-bs-target="#armModal"
+                    class="btn btn-warning btn-lg btn-block text-uppercase">User Keypad
+            </button>
+        </div>
     </div>
 
     <!-- Keypad Modal -->
@@ -51,21 +58,40 @@
 
                 <div class="modal-body">
                     <div class="d-grid gap-5 text-center pb-3">
-                        <button onclick="arming(this, false)" type="button" name="arm_button" id="arm_away" arming_cmd="A" class="text-uppercase btn btn-danger btn-lg btn-block">
-                            <span class="spinner-border spinner-border-sm" name="arm_spinner" id="arm_away_spinner" role="status" aria-hidden="true" hidden></span>
+
+                        {% if user.is_superuser %}
+                            <!-- Content visible only to superusers -->
+                            <button onclick="openPanicModal(this, false)" open_ack_modal="true" type="button" name="panic_button" id="panic" arming_cmd="P"
+                                    class="text-uppercase btn btn-danger btn-lg btn-block">
+                                <span class="spinner-border spinner-border-sm" name="arm_spinner" id="arm_home_spinner"
+                                      role="status" aria-hidden="true" hidden></span>
+                                PANIC
+                            </button>
+
+                            <hr class="my-4 border border-dark border-2 opacity-50">
+
+                        {% endif %}
+
+                        <button onclick="arming(this, false)" type="button" name="arm_button" id="arm_away"
+                                arming_cmd="A" class="text-uppercase btn btn-danger btn-lg btn-block">
+                            <span class="spinner-border spinner-border-sm" name="arm_spinner" id="arm_away_spinner"
+                                  role="status" aria-hidden="true" hidden></span>
                             Away
                         </button>
 
-                        <button onclick="arming(this, false)" type="button" name="arm_button" id="arm_home" arming_cmd="H" class="text-uppercase btn btn-danger btn-lg btn-block">
-                            <span class="spinner-border spinner-border-sm" name="arm_spinner" id="arm_home_spinner" role="status" aria-hidden="true" hidden></span>
+                        <button onclick="arming(this, false)" type="button" name="arm_button" id="arm_home"
+                                arming_cmd="H" class="text-uppercase btn btn-danger btn-lg btn-block">
+                            <span class="spinner-border spinner-border-sm" name="arm_spinner" id="arm_home_spinner"
+                                  role="status" aria-hidden="true" hidden></span>
                             Home
                         </button>
 
-                        <button onclick="arming(this, true)" type="button" name="disarm_button" id="disarm" arming_cmd="" class="text-uppercase btn btn-success btn-lg btn-block">
-                            <span class="spinner-border spinner-border-sm" name="arm_spinner" id="disarm_spinner" role="status" aria-hidden="true" hidden></span>
+                        <button onclick="arming(this, true)" type="button" name="disarm_button" id="disarm"
+                                arming_cmd="" class="text-uppercase btn btn-success btn-lg btn-block">
+                            <span class="spinner-border spinner-border-sm" name="arm_spinner" id="disarm_spinner"
+                                  role="status" aria-hidden="true" hidden></span>
                             Disarm
                         </button>
-
                     </div>
                 </div>
 
@@ -89,9 +115,12 @@
                     <p id="ackModalMessage"></p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary text-uppercase" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" id="ackModalBtnApply" onclick=manual_exclude(this) class="btn btn-danger text-uppercase" disabled>
-                        <span class="spinner-border spinner-border-sm" name="ack_spinner" id="ack_spinner" role="status" aria-hidden="true" hidden></span> Apply
+                    <button type="button" class="btn btn-secondary text-uppercase" data-bs-dismiss="modal">Cancel
+                    </button>
+                    <button type="button" id="ackModalBtnApply" onclick=manual_exclude(this)
+                            class="btn btn-danger text-uppercase" disabled>
+                        <span class="spinner-border spinner-border-sm" name="ack_spinner" id="ack_spinner" role="status"
+                              aria-hidden="true" hidden></span> Apply
                     </button>
 
                 </div>
@@ -99,8 +128,31 @@
         </div>
     </div>
 
+    {% if user.is_superuser %}
 
-    <div class="modal fade" id="connectivity" tabindex="-1" aria-labelledby="connectivityModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <!-- Panic Ack Modal -->
+        <div class="modal fade" id="ackPanicModal" tabindex="-1" aria-labelledby="ackModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title text-uppercase">Confirm panic alarm</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>The <b class="text-uppercase fa-bold">Panic Alarm</b> is a serious feature on the NESS alarm panel and should only be used in emergencies involving serious harm or threat.</p>
+                    </div>
+                    <div class="modal-footer d-flex justify-content-between">
+                          <button onclick="openPanicModal(this, true)" trigger_panic_alarm="true" type="button" class="btn btn-danger text-uppercase">Set off the alarm</button>
+                          <button type="button" class="btn btn-secondary text-uppercase" data-bs-dismiss="modal">NO, GO BACK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+     {% endif %}
+
+    <div class="modal fade" id="connectivity" tabindex="-1" aria-labelledby="connectivityModalLabel" aria-hidden="true"
+         data-backdrop="static" data-keyboard="false">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content progress-bar-striped bg-warning">
 
@@ -132,14 +184,16 @@
         setInterval(updateZones, 500);
         setInterval(updateNESSSecurityPanelStatus, 500);
         setInterval(checkForConectivity, 1000);
+        setInterval(checkExclusion, 5000);
 
         function checkExclusion() {
-            $.get("{{ api_url_ness_system_status }}",
+            $.get("{% url 'api-system-status-list' %}",
                 {
                     'check_exclusions': true
                 },
 
-                function (data, status) { });
+                function (data, status) {
+                });
         }
 
         function checkForConectivity() {
@@ -148,8 +202,6 @@
                 $.get("{% url 'api-ness_comms-app-list' %}",
                     {},
                     function (data, status) {
-                        console.log('checkForConectivity()', data)
-
                         if (data.connection_valid) {
                             $('#connectivity').modal('hide');
                         }
@@ -219,9 +271,6 @@
                     }
 
                     data.forEach(e => {
-
-                        console.log("updateNESSSecurityPanelStatus:", e);
-
                         var arming_state = document.getElementById("arming_state")
                         var alarm_state = document.getElementById("alarm_state")
 
@@ -229,9 +278,9 @@
                             arming_state.innerHTML = "ARMED AWAY"
                         } else if (e.is_armed_home) {
                             arming_state.innerHTML = "ARMED HOME"
-                        } else if(e.is_disarmed){
-                             arming_state.innerHTML = "DISARMED"
-                        } else{
+                        } else if (e.is_disarmed) {
+                            arming_state.innerHTML = "DISARMED"
+                        } else {
                             arming_state.innerHTML = "ERROR"
                         }
 
@@ -244,7 +293,7 @@
                             alarm_state.innerHTML = "SIREN IN STANDBY"
                         }
 
-                       if (e.is_disarmed){
+                        if (e.is_disarmed) {
                             arming_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-success");
                             arming_state.setAttribute("data-bs-original-title", "Ready");
 
@@ -256,7 +305,7 @@
                                 b.setAttribute("hidden", "");
                             });
 
-                       } else if (e.is_armed_home || e.is_armed_away) {
+                        } else if (e.is_armed_home || e.is_armed_away) {
                             arming_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-danger pulse");
                             arming_state.setAttribute("data-bs-original-title", "Ready");
 
@@ -309,29 +358,10 @@
             })
                 .then(response => response.json())
                 .then(response => {
-                    console.log(JSON.stringify(response))
-
                     spinner.setAttribute("hidden", "");
 
                     $('#ackModal').modal('toggle');
                 })
-        }
-
-        function status() {
-
-            fetch("{% url 'api-system-status-list' %}", {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    "input_command": true,
-                    "get_status_update": true
-                })
-            })
-                .then(response => response.json())
-                .then(response => console.log(JSON.stringify(response)))
         }
 
         function openAckModal(e) {
@@ -347,6 +377,40 @@
 
         }
 
+      {% if user.is_superuser %}
+
+        function openPanicModal(e, trigger) {
+            if (e.getAttribute("open_ack_modal")) {
+                $('#ackPanicModal').modal('toggle')
+            }
+            else if (e.getAttribute("trigger_panic_alarm")){
+                fetch("{% url 'api-system-status-list' %}", {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    "input_command": true,
+                    "panic": trigger
+                })
+            })
+                .then(response => response.json())
+                .then(response => {
+                        console.log(JSON.stringify(response));
+
+                         if (response.user_input_ack){
+                            $('#ackPanicModal').modal('toggle')
+                             alert("Panic alarm has been triggered!")
+                         }
+
+                    }
+                )
+            }
+        }
+
+      {% endif %}
+
         function arming(e, disarm) {
 
             isArming = !disarm; // Global var which is share with updateArmingState()
@@ -355,7 +419,7 @@
             let spinner = e.firstElementChild;
             spinner.removeAttribute("hidden");
 
-            fetch("{{ api_url_ness_system_status }}", {
+            fetch("{% url 'api-system-status-list' %}", {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -371,6 +435,10 @@
                 .then(response => response.json())
                 .then(response => {
                         console.log(JSON.stringify(response));
+
+                        if (response.user_input_ack)
+                            spinner.setAttribute("hidden", true);
+                        spinner.setAttribute("hidden", true);
                     }
                 )
         }

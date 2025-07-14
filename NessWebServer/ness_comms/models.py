@@ -4,9 +4,7 @@ import logging
 
 from django.urls import reverse
 
-from nessclient import BaseEvent
 from nessclient.packet import Packet, CommandType
-from nessclient.event import SystemStatusEvent, StatusUpdate, ZoneUpdate
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -88,7 +86,7 @@ class UserInput(models.Model):
             )
 
             self.raw_data = packet.encode()
-            
+
         super(UserInput, self).save(*args, **kwargs)
 
 
@@ -106,6 +104,8 @@ class SystemStatus(models.Model):
     is_armed_away = models.BooleanField(default=False)
     is_disarmed = models.BooleanField(default=False)
 
+    is_panic = models.BooleanField(default=False)
+
     arming_delayed_active = models.BooleanField(default=False)
 
     alarm_siren_on = models.BooleanField(default=False)
@@ -117,7 +117,8 @@ class SystemStatus(models.Model):
         true_flags = [
             self.is_armed_home,
             self.is_armed_away,
-            self.is_disarmed
+            self.is_disarmed,
+            self.is_panic,
         ]
 
         if true_flags.count(True) > 1:
@@ -127,11 +128,18 @@ class SystemStatus(models.Model):
         if self.is_armed_home:
             self.is_armed_away = False
             self.is_disarmed = False
+            self.is_panic = False
         elif self.is_armed_away:
             self.is_armed_home = False
             self.is_disarmed = False
+            self.is_panic = False
         elif self.is_disarmed:
             self.is_armed_home = False
+            self.is_armed_away = False
+            self.is_panic = False
+        elif self.is_panic:
+            self.is_armed_home = False
+            self.is_disarmed = False
             self.is_armed_away = False
 
         super().save(*args, **kwargs)

@@ -80,15 +80,17 @@ class NessSystemStatusViewSet(viewsets.ModelViewSet):
 
             if request.data.get("arming"):
                 if request.data.get("disarm"):
+                    #          e.g 0212E to disarm
                     cmds.append(f'{request.user.panel_code}E')
-
-                    # request zone status disarming to reflect current state of zones
-                    cmds.append(f'S06')
                 else:
+                    #          e.g H0212E to Arm HOME MODE
                     cmds.append(f'{request.data.get("arming_cmd")}{request.user.panel_code}E')
 
-            if request.data.get("get_status_update"):
+                # request zone status disarming to reflect current state of zones
                 cmds.append(f'S06')
+
+            if request.data.get("panic"):
+                cmds.append(f'P{request.user.panel_code}E')
 
             # check if we received a valid command
             if len(cmds):
@@ -97,14 +99,14 @@ class NessSystemStatusViewSet(viewsets.ModelViewSet):
                         data=cmd,
                         type=CommandType.USER_INTERFACE,
                         user_input_command=True
-                    )
+                    )[0]
 
-                    event[0].timestamp = datetime.datetime.now().astimezone(tz=zoneinfo.ZoneInfo("Australia/Hobart"))
-                    event[0].input_command_received = False
-                    event[0].type_id = CommandType.USER_INTERFACE.value
-                    event[0].save()
+                    event.timestamp = datetime.datetime.now().astimezone(tz=zoneinfo.ZoneInfo("Australia/Hobart"))
+                    event.input_command_received = False
+                    event.type_id = CommandType.USER_INTERFACE.value
+                    event.save()
 
-                return Response(request.data, status=status.HTTP_201_CREATED)
+                return Response({"user_input_ack":True}, status=status.HTTP_201_CREATED)
 
         # if nothing matches return bad request
         return Response(None, status=status.HTTP_400_BAD_REQUEST)
