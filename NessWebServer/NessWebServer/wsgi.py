@@ -14,3 +14,7 @@ from django.core.wsgi import get_wsgi_application
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'NessWebServer.settings')
 
 application = get_wsgi_application()
+
+from setup import create_default_zones
+
+create_default_zones()

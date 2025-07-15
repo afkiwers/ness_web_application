@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from ness_comms.models import *
 
+from ness_comms.models import Zone, SystemStatus, UserInput
 
 class ZoneSerializer(serializers.ModelSerializer):
     class Meta:
@@ -8,23 +8,19 @@ class ZoneSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class DeviceSerializer(serializers.ModelSerializer):
+class NessSystemStatusSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Device
+        model = SystemStatus
         fields = '__all__'
 
 
-class EventDataSerializer(serializers.ModelSerializer):
+class UserInputSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Event
+        model = UserInput
         fields = '__all__'
-
-
-# class NESSDataSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = EventData
-#         fields = ('raw_data',)
 
 
 class NessPacketSerializer(serializers.Serializer):
     raw_data = serializers.CharField(max_length=256)
+    ip = serializers.CharField(max_length=256)
+    fw = serializers.CharField(max_length=256)
