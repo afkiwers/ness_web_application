@@ -1,5 +1,7 @@
 # NESS 2 Web API
 
+This web API complemets the **[Ness2Wifi Bridge](https://github.com/afkiwers/ness2web_pcb)** which is a low-cost PCB that connects the NESS Security Panel DX8/16 to the WIFI network. 
+
 ## Web Application
 The Ness 2 Web API includes a built-in web application designed for ease of use and accessibility. It supports multiple users at the same time, allowing simultaneous access.
 
