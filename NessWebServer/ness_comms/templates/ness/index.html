@@ -59,7 +59,7 @@
                 <div class="modal-body">
                     <div class="d-grid gap-5 text-center pb-3">
 
-                        {% if user.is_superuser %}
+                        {% if user.enable_panic_mode %}
                             <!-- Content visible only to superusers -->
                             <button onclick="openPanicModal(this, false)" open_ack_modal="true" type="button" name="panic_button" id="panic" arming_cmd="P"
                                     class="text-uppercase btn btn-danger btn-lg btn-block">
@@ -128,7 +128,7 @@
         </div>
     </div>
 
-    {% if user.is_superuser %}
+    {% if user.enable_panic_mode %}
 
         <!-- Panic Ack Modal -->
         <div class="modal fade" id="ackPanicModal" tabindex="-1" aria-labelledby="ackModalLabel" aria-hidden="true">
@@ -377,7 +377,7 @@
 
         }
 
-      {% if user.is_superuser %}
+      {% if user.enable_panic_mode %}
 
         function openPanicModal(e, trigger) {
             if (e.getAttribute("open_ack_modal")) {

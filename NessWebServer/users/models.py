@@ -10,3 +10,5 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
 
     panel_code = models.CharField("Ness Panel User Code", max_length=4, default='0000')
+
+    enable_panic_mode = models.BooleanField(default=False)
