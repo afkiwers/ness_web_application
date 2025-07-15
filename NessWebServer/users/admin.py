@@ -16,20 +16,6 @@ class CustomUserAdmin(UserAdmin):
             "fields": ("panel_code", "enable_panic_mode"),
         }),
     )
-    #
-    # fieldsets = (
-    #     *UserAdmin.fieldsets,
-    #     (
-    #         'Additional User Settings',  # group heading of your choice; set to None for a blank space instead of a header
-    #         {
-    #             'fields': (
-    #                 'panel_code',
-    #                 'enable_panic_mode',
-    #             ),
-    #         },
-    #     ),
-    # )
-
 
 # Register your models here.
 admin.site.register(CustomUser, CustomUserAdmin)
