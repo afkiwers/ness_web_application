@@ -25,12 +25,12 @@ class NessSystemStatusViewSet(viewsets.ModelViewSet):
     # permission_classes = [IsAuthenticated | HasAPIKey]
 
     serializer_class = NessSystemStatusSerializer
-    queryset = UserInput.objects.all()
+    queryset = SystemStatus.objects.all()
 
     http_method_names = ['get', 'post', 'patch']
 
     def get_queryset(self):
-        queryset = UserInput.objects.all()
+        queryset = SystemStatus.objects.all()
 
         latest_arm_state = self.request.query_params.get('latest_arm_state', None)
         latest_alarm_state = self.request.query_params.get('latest_alarm_state', None)
