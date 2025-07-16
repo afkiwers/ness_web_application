@@ -99,6 +99,7 @@ class SystemStatus(models.Model):
     # ness2wifi bridge information
     ness2wifi_ip = models.CharField("Ness WiFi IP", max_length=50, default="")
     ness2wifi_fw_version = models.CharField("Ness 2 WiFi bridge Firmware Version", max_length=50, default="")
+    ness2wifi_ota_enabled = models.BooleanField("Ness WiFi Ota Enabled", default=False)
 
     is_armed_home = models.BooleanField(default=False)
     is_armed_away = models.BooleanField(default=False)
