@@ -1,8 +1,11 @@
-# Use a stable, lightweight Debian-based Python image
+# Use a stable, Debian-based Python image
 FROM python:3.11.7-slim
 
 # Set working directory
 WORKDIR /app
+
+# Prevent interactive prompts during install
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies
 RUN apt-get update && \
@@ -18,17 +21,18 @@ RUN apt-get update && \
         default-libmysqlclient-dev \
         pkg-config \
         curl \
+        dos2unix \
         && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy your app code and entrypoint script
+# Copy app code
 COPY . .
 
-# Convert entrypoint.sh to Unix format (optional safety)
-RUN sed -i 's/\r$//' ./entrypoint.sh && chmod +x ./entrypoint.sh
+# Normalize entrypoint (handle CRLF and permissions)
+RUN dos2unix ./entrypoint.sh && chmod +x ./entrypoint.sh
 
 # Set entrypoint
 ENTRYPOINT ["./entrypoint.sh"]
