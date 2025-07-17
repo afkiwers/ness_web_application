@@ -134,6 +134,9 @@ class NessCommsRawDataViewSet(viewsets.ViewSet):
             raw_data = serializer.validated_data.get('raw_data')
             ness_pcb_ip = serializer.validated_data.get('ip')
             fw = serializer.validated_data.get('fw')
+            otaEnabled = serializer.validated_data.get('otaEnabled')
+
+            print(f'ESP32 - otaEnabled: {otaEnabled}')
 
             # Get the current state of the NESS PCB
             ness_status = SystemStatus.objects.get_or_create(id=1)[0]

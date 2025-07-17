@@ -142,8 +142,8 @@
                         <p>The <b class="text-uppercase fa-bold">Panic Alarm</b> is a serious feature on the NESS alarm panel and should only be used in emergencies involving serious harm or threat.</p>
                     </div>
                     <div class="modal-footer d-flex justify-content-between">
-                          <button onclick="openPanicModal(this, true)" trigger_panic_alarm="true" type="button" class="btn btn-danger text-uppercase">Set off the alarm</button>
-                          <button type="button" class="btn btn-secondary text-uppercase" data-bs-dismiss="modal">NO, GO BACK</button>
+                        <button onclick="openPanicModal(this, true)" trigger_panic_alarm="true" type="button" class="btn btn-danger text-uppercase">Set off the alarm</button>
+                        <button onclick="toggleArmModal()" type="button" class="btn btn-secondary text-uppercase" data-bs-dismiss="modal">NO, GO BACK</button>
                     </div>
                 </div>
             </div>
@@ -185,6 +185,10 @@
         setInterval(updateNESSSecurityPanelStatus, 500);
         setInterval(checkForConectivity, 1000);
         setInterval(checkExclusion, 5000);
+
+        function toggleArmModal(){
+            $('#armModal').modal('toggle');
+        }
 
         function checkExclusion() {
             $.get("{% url 'api-system-status-list' %}",
@@ -382,6 +386,7 @@
         function openPanicModal(e, trigger) {
             if (e.getAttribute("open_ack_modal")) {
                 $('#ackPanicModal').modal('toggle')
+                $('#armModal').modal('toggle');
             }
             else if (e.getAttribute("trigger_panic_alarm")){
                 fetch("{% url 'api-system-status-list' %}", {
@@ -401,6 +406,7 @@
 
                          if (response.user_input_ack){
                             $('#ackPanicModal').modal('toggle')
+                            $('#armModal').modal('toggle');
                              alert("Panic alarm has been triggered!")
                          }
 
