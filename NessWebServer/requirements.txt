@@ -2,7 +2,7 @@ djangorestframework
 markdown
 crispy-bootstrap5
 django-filter
-Django
+Django==4.1.*
 djangorestframework-api-key==2.*
 django-axes
 django-crispy-forms
