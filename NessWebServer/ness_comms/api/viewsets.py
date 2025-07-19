@@ -8,9 +8,11 @@ from nessclient.packet import CommandType, Packet
 from nessclient.event import SystemStatusEvent, ZoneUpdate, MiscellaneousAlarmsUpdate, ArmingUpdate, StatusUpdate
 
 from rest_framework.authentication import BasicAuthentication, TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from rest_framework import viewsets, status
+from rest_framework_api_key.permissions import HasAPIKey
 
 from NessWebServer.api.viewsets import CsrfExemptSessionAuthentication
 from ness_comms.api.serializers import NessSystemStatusSerializer, ZoneSerializer, NessPacketSerializer, UserInputSerializer
@@ -22,7 +24,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class NessSystemStatusViewSet(viewsets.ModelViewSet):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication, TokenAuthentication)
-    # permission_classes = [IsAuthenticated | HasAPIKey]
+    permission_classes = [IsAuthenticated | HasAPIKey]
 
     serializer_class = NessSystemStatusSerializer
     queryset = SystemStatus.objects.all()
@@ -114,7 +116,7 @@ class NessSystemStatusViewSet(viewsets.ModelViewSet):
 
 class ZoneViewSet(viewsets.ModelViewSet):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication, TokenAuthentication)
-    # permission_classes = [IsAuthenticated | HasAPIKey]
+    permission_classes = [IsAuthenticated | HasAPIKey]
 
     serializer_class = ZoneSerializer
     queryset = Zone.objects.all()
@@ -123,6 +125,9 @@ class ZoneViewSet(viewsets.ModelViewSet):
 
 
 class NessCommsRawDataViewSet(viewsets.ViewSet):
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication, TokenAuthentication)
+    permission_classes = [IsAuthenticated | HasAPIKey]
+
     serializer_class = NessPacketSerializer
 
     def create(self, request):
@@ -272,7 +277,7 @@ class NessCommsRawDataViewSet(viewsets.ViewSet):
 
 class UserInputViewSet(viewsets.ModelViewSet):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication, TokenAuthentication)
-    # permission_classes = [IsAuthenticated | HasAPIKey]
+    permission_classes = [IsAuthenticated | HasAPIKey]
 
     serializer_class = UserInputSerializer
     queryset = UserInput.objects.all()

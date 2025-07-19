@@ -23,8 +23,8 @@ from NessWebServer.api.router import api_logout, main_router
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path('user/', include('users.urls')),
     path('', include('ness_comms.urls')),
-    path('', include('users.urls')),
 
     path('api/', include(main_router.urls)),
     path('api/api-token-auth/', rest_views.obtain_auth_token, name='api-token-auth'),
