@@ -5,7 +5,7 @@ import zoneinfo
 import pytz
 from nessclient import BaseEvent
 from nessclient.packet import CommandType, Packet
-from nessclient.event import SystemStatusEvent, ZoneUpdate, MiscellaneousAlarmsUpdate, ArmingUpdate, StatusUpdate
+from nessclient.event import SystemStatusEvent, ZoneUpdate_1_16, MiscellaneousAlarmsUpdate, ArmingUpdate, StatusUpdate
 
 from rest_framework.authentication import BasicAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
@@ -17,6 +17,8 @@ from rest_framework_api_key.permissions import HasAPIKey
 from NessWebServer.api.viewsets import CsrfExemptSessionAuthentication
 from ness_comms.api.serializers import NessSystemStatusSerializer, ZoneSerializer, NessPacketSerializer, UserInputSerializer
 from ness_comms.models import UserInput, Zone, SystemStatus
+from ness_comms.broadcast import broadcast_zone_update, broadcast_system_update, record_alarm_event
+from ness_comms.models import AlarmEvent
 
 from django.db.models import Q
 
@@ -75,6 +77,10 @@ class NessSystemStatusViewSet(viewsets.ModelViewSet):
 
                     # request zone status after toggle
                     cmds.append(f'S06')
+
+                    # Record the toggle event (current excluded state is about to flip)
+                    evt = AlarmEvent.EventType.ZONE_INCLUDED if selected_zone.excluded else AlarmEvent.EventType.ZONE_EXCLUDED
+                    record_alarm_event(evt, zone=selected_zone, user=request.user)
                 else:
 
                     # TODO: handle multiple excludes at once
@@ -84,15 +90,20 @@ class NessSystemStatusViewSet(viewsets.ModelViewSet):
                 if request.data.get("disarm"):
                     #          e.g 0212E to disarm
                     cmds.append(f'{request.user.panel_code}E')
+                    record_alarm_event(AlarmEvent.EventType.DISARMED, user=request.user)
                 else:
+                    arming_cmd = request.data.get("arming_cmd")
                     #          e.g H0212E to Arm HOME MODE
-                    cmds.append(f'{request.data.get("arming_cmd")}{request.user.panel_code}E')
+                    cmds.append(f'{arming_cmd}{request.user.panel_code}E')
+                    evt = AlarmEvent.EventType.ARMED_HOME if arming_cmd == 'H' else AlarmEvent.EventType.ARMED_AWAY
+                    record_alarm_event(evt, user=request.user)
 
                 # request zone status disarming to reflect current state of zones
                 cmds.append(f'S06')
 
             if request.data.get("panic"):
                 cmds.append(f'P{request.user.panel_code}E')
+                record_alarm_event(AlarmEvent.EventType.PANIC_TRIGGERED, user=request.user)
 
             # check if we received a valid command
             if len(cmds):
@@ -169,9 +180,12 @@ class NessCommsRawDataViewSet(viewsets.ViewSet):
                             SystemStatusEvent.EventType.UNSEALED
                     ):
                         try:
-                            zone = Zone.objects.get(address=list(ZoneUpdate.Zone)[event.zone - 1].value)
+                            zone = Zone.objects.get(address=list(ZoneUpdate_1_16.Zone)[event.zone - 1].value)
                             zone.sealed = event.type.value
                             zone.save()
+                            broadcast_zone_update(zone)
+                            evt = AlarmEvent.EventType.ZONE_SEALED if event.type == SystemStatusEvent.EventType.SEALED else AlarmEvent.EventType.ZONE_TRIGGERED
+                            record_alarm_event(evt, zone=zone)
 
                         except Exception as e:
                             print(f"Error updating zone status: {str(e)}")
@@ -191,8 +205,10 @@ class NessCommsRawDataViewSet(viewsets.ViewSet):
                             # Is the siren active?
                             if event.type == SystemStatusEvent.EventType.OUTPUT_ON:
                                 ness_status.alarm_siren_on = True
+                                record_alarm_event(AlarmEvent.EventType.SIREN_ON)
                             elif event.type == SystemStatusEvent.EventType.OUTPUT_OFF:
                                 ness_status.alarm_siren_on = False
+                                record_alarm_event(AlarmEvent.EventType.SIREN_OFF)
 
                             # Is the delay active?
                             if event.type == SystemStatusEvent.EventType.EXIT_DELAY_START:
@@ -205,16 +221,20 @@ class NessCommsRawDataViewSet(viewsets.ViewSet):
                                 ness_status.is_armed_home = True
                                 ness_status.is_armed_away = False
                                 ness_status.is_disarmed = False
+                                record_alarm_event(AlarmEvent.EventType.ARMED_HOME)
                             elif event.type == SystemStatusEvent.EventType.ARMED_AWAY:
                                 ness_status.is_armed_home = False
                                 ness_status.is_armed_away = True
                                 ness_status.is_disarmed = False
+                                record_alarm_event(AlarmEvent.EventType.ARMED_AWAY)
                             elif event.type == SystemStatusEvent.EventType.DISARMED:
                                 ness_status.is_armed_home = False
                                 ness_status.is_armed_away = False
                                 ness_status.is_disarmed = True
+                                record_alarm_event(AlarmEvent.EventType.DISARMED)
 
                             ness_status.save()
+                            broadcast_system_update(ness_status)
 
                         except Exception as e:
                             print(f"Error updating arming state: {str(e)}")
@@ -229,14 +249,15 @@ class NessCommsRawDataViewSet(viewsets.ViewSet):
                             zone = Zone.objects.get(address=list(ZoneUpdate.Zone)[event.type.value].value)
                             zone.excluded = True if event.type is SystemStatusEvent.EventType.MANUAL_EXCLUDE else False
                             zone.save()
+                            broadcast_zone_update(zone)
 
                         except Exception as e:
                             print(f"Error updating zone status: {str(e)}")
 
-                    elif event.type is ZoneUpdate:
+                    elif event.type is ZoneUpdate_1_16:
                         print("ZoneUpdate")
 
-                        if event.request_id == StatusUpdate.RequestID.ZONE_EXCLUDED:
+                        if event.request_id == StatusUpdate.RequestID.ZONE_1_16_EXCLUDED:
                             zones = Zone.objects.all()
 
                             # reset the ones which are not excluded
@@ -248,6 +269,7 @@ class NessCommsRawDataViewSet(viewsets.ViewSet):
                                         zone.excluded = True
 
                                 zone.save()
+                                broadcast_zone_update(zone)
 
 
                         print(f'ZoneUpdate...')
@@ -262,6 +284,7 @@ class NessCommsRawDataViewSet(viewsets.ViewSet):
                             zone.excluded = True
 
                         zone.save()
+                        broadcast_zone_update(zone)
 
                 else:
                     print("not covered...")

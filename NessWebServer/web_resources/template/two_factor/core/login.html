@@ -1,0 +1,52 @@
+{% extends "two_factor/_base_focus.html" %}
+{% load i18n %}
+{% load two_factor_tags %}
+
+{% block extra_media %}{{ form.media }}{% endblock %}
+
+{% block subtitle %}
+    {% if wizard.steps.current == 'auth' %}
+        Sign in to access your security panel
+    {% elif wizard.steps.current == 'token' %}
+        Enter your authenticator code
+    {% elif wizard.steps.current == 'backup' %}
+        Enter a backup token
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+  <form action="" method="post">
+    {% csrf_token %}
+    {% include "two_factor/_wizard_forms.html" %}
+
+    {# hidden submit to enable Enter key #}
+    <input type="submit" value="" hidden />
+
+    {% if other_devices %}
+      <p class="mt-3 text-muted small">{% trans "Or use another method:" %}</p>
+      {% for other in other_devices %}
+        <button name="challenge_device" value="{{ other.persistent_id }}"
+                class="btn btn-secondary w-100 mb-2" type="submit">
+          {{ other|as_action }}
+        </button>
+      {% endfor %}
+    {% endif %}
+
+    {% include "two_factor/_wizard_actions.html" %}
+
+    {% if wizard.steps.current == 'auth' %}
+      <p class="text-center mt-3" style="color:#6c757d;font-size:0.8125rem;">
+        Forgot your password? <a href="{% url 'password_reset' %}" style="color:#ffc107;text-decoration:none;">Reset it</a>
+      </p>
+    {% endif %}
+  </form>
+
+  {% if backup_tokens %}
+    <hr style="border-color:#2a2a2a;">
+    <form action="" method="post">
+      {% csrf_token %}
+      <button name="wizard_goto_step" type="submit" value="backup"
+              class="btn btn-secondary w-100">{% trans "Use Backup Token" %}</button>
+    </form>
+  {% endif %}
+{% endblock %}

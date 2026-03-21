@@ -15,6 +15,6 @@ if not User.objects.filter(username=username).exists():
     User.objects.create_superuser(username, email, password)
 EOF
 
-gunicorn -c gunicorn.conf NessWebServer.wsgi
+daphne -b 0.0.0.0 -p 8000 --access-log /var/log/gunicorn/daphne-access.log NessWebServer.asgi:application
 
 exec "$@"

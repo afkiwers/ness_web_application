@@ -1,0 +1,171 @@
+{% extends "base-template.html" %}
+{% load static %}
+
+{% block header %}
+<style>
+    .event-badge {
+        font-size: 0.75rem;
+        padding: 0.3em 0.6em;
+        border-radius: 6px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .event-ARMED_AWAY, .event-ARMED_HOME { background: #dc3545; color: #fff; }
+    .event-DISARMED { background: #198754; color: #fff; }
+    .event-SIREN_ON, .event-PANIC_TRIGGERED { background: #dc3545; color: #fff; animation: pulse-badge 1s infinite; }
+    .event-SIREN_OFF { background: #6c757d; color: #fff; }
+    .event-ZONE_TRIGGERED { background: #fd7e14; color: #000; }
+    .event-ZONE_SEALED { background: #198754; color: #fff; }
+    .event-ZONE_EXCLUDED { background: #0dcaf0; color: #000; }
+    .event-ZONE_INCLUDED { background: #6610f2; color: #fff; }
+
+    @keyframes pulse-badge {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+
+    .history-table td { vertical-align: middle; }
+    .history-table tr.new-event { animation: flash-row 1.5s ease-out; }
+
+    @keyframes flash-row {
+        0% { background-color: rgba(255, 193, 7, 0.25); }
+        100% { background-color: transparent; }
+    }
+
+    .user-badge {
+        font-size: 0.75rem;
+        color: #adb5bd;
+    }
+
+    .ws-status {
+        width: 10px; height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        background: #6c757d;
+        margin-right: 6px;
+        transition: background 0.3s;
+    }
+    .ws-status.connected { background: #198754; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0">Alarm Event History</h5>
+    <small class="text-muted">
+        <span class="ws-status" id="wsStatus"></span>
+        <span id="wsStatusText">Connecting…</span>
+    </small>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0 history-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width:160px">Time</th>
+                        <th>Event</th>
+                        <th>Zone</th>
+                        <th>User</th>
+                    </tr>
+                </thead>
+                <tbody id="eventTableBody">
+                    {% for event in events %}
+                    <tr>
+                        <td class="text-muted" style="font-size:0.8rem;white-space:nowrap">{{ event.timestamp|date:"d M Y H:i:s" }}</td>
+                        <td><span class="event-badge event-{{ event.event_type }}">{{ event.get_event_type_display }}</span></td>
+                        <td>{% if event.zone %}<span class="text-light">{{ event.zone }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                        <td>{% if event.triggered_by %}<span class="user-badge">{{ event.triggered_by.username }}</span>{% else %}<span class="text-muted">Panel</span>{% endif %}</td>
+                    </tr>
+                    {% empty %}
+                    <tr id="emptyRow"><td colspan="4" class="text-center text-muted py-4">No events recorded yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const wsUrl = wsScheme + '://' + window.location.host + '/ws/history/';
+
+    const statusDot = document.getElementById('wsStatus');
+    const statusText = document.getElementById('wsStatusText');
+    const tbody = document.getElementById('eventTableBody');
+
+    function setWsStatus(connected) {
+        if (connected) {
+            statusDot.classList.add('connected');
+            statusText.textContent = 'Live';
+        } else {
+            statusDot.classList.remove('connected');
+            statusText.textContent = 'Reconnecting…';
+        }
+    }
+
+    function formatTs(iso) {
+        const d = new Date(iso);
+        return d.toLocaleDateString('en-AU', {day:'2-digit', month:'short', year:'numeric'}) + ' ' +
+               d.toLocaleTimeString('en-AU', {hour12: false});
+    }
+
+    const eventBadgeClasses = {
+        'ARMED_AWAY': 'event-ARMED_AWAY',
+        'ARMED_HOME': 'event-ARMED_HOME',
+        'DISARMED': 'event-DISARMED',
+        'SIREN_ON': 'event-SIREN_ON',
+        'SIREN_OFF': 'event-SIREN_OFF',
+        'PANIC_TRIGGERED': 'event-PANIC_TRIGGERED',
+        'ZONE_TRIGGERED': 'event-ZONE_TRIGGERED',
+        'ZONE_SEALED': 'event-ZONE_SEALED',
+        'ZONE_EXCLUDED': 'event-ZONE_EXCLUDED',
+        'ZONE_INCLUDED': 'event-ZONE_INCLUDED',
+    };
+
+    function buildRow(e, highlight) {
+        const tr = document.createElement('tr');
+        if (highlight) tr.classList.add('new-event');
+        tr.innerHTML = `
+            <td class="text-muted" style="font-size:0.8rem;white-space:nowrap">${formatTs(e.timestamp)}</td>
+            <td><span class="event-badge ${eventBadgeClasses[e.event_type] || ''}">${e.event_type_display}</span></td>
+            <td>${e.zone_name ? `<span class="text-light">${e.zone_name}</span>` : '<span class="text-muted">—</span>'}</td>
+            <td>${e.triggered_by ? `<span class="user-badge">${e.triggered_by}</span>` : '<span class="text-muted">Panel</span>'}</td>
+        `;
+        return tr;
+    }
+
+    function connectWs() {
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => setWsStatus(true);
+
+        ws.onmessage = (msg) => {
+            const data = JSON.parse(msg.data);
+            if (data.type === 'history_snapshot') {
+                // Replace table content with snapshot (already have server-rendered, skip if non-empty)
+                if (data.events.length > 0 && tbody.querySelector('#emptyRow')) {
+                    tbody.innerHTML = '';
+                    data.events.forEach(e => tbody.appendChild(buildRow(e, false)));
+                }
+            } else if (data.type === 'new_event') {
+                const emptyRow = tbody.querySelector('#emptyRow');
+                if (emptyRow) emptyRow.remove();
+                tbody.insertBefore(buildRow(data, true), tbody.firstChild);
+                // Keep max 200 rows
+                while (tbody.rows.length > 200) tbody.deleteRow(tbody.rows.length - 1);
+            }
+        };
+
+        ws.onclose = () => {
+            setWsStatus(false);
+            setTimeout(connectWs, 3000);
+        };
+    }
+
+    connectWs();
+</script>
+{% endblock %}

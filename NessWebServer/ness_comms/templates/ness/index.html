@@ -151,23 +151,72 @@
 
      {% endif %}
 
-    <div class="modal fade" id="connectivity" tabindex="-1" aria-labelledby="connectivityModalLabel" aria-hidden="true"
-         data-backdrop="static" data-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content progress-bar-striped bg-warning">
+    <div class="modal fade" id="connectivity" tabindex="-1"
+         data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0" style="
+                background: #1a1a1a;
+                border-radius: 16px;
+                box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+                overflow: hidden;
+            ">
+                <div class="modal-body text-center p-4">
 
-                <div class="modal-body">
-                    <p>Waiting for Server...</p>
+                    <!-- animated signal icon -->
+                    <div style="position:relative;width:72px;height:72px;margin:0 auto 1.25rem;">
+                        <div style="
+                            position:absolute;inset:0;
+                            background:linear-gradient(135deg,#ffc107,#e65100);
+                            border-radius:50%;
+                            animation:pulse-ring 1.5s ease-out infinite;
+                        "></div>
+                        <div style="
+                            position:absolute;inset:6px;
+                            background:#1a1a1a;
+                            border-radius:50%;
+                            display:flex;align-items:center;justify-content:center;
+                            font-size:1.6rem;
+                        ">⚡</div>
+                    </div>
 
-                    <div class="d-flex justify-content-center">
-                        <div class="spinner-border" style="width: 6rem; height: 6rem;" role="status"></div>
+                    <p id="connectivity-message" style="
+                        color:#fff;
+                        font-weight:600;
+                        font-size:1rem;
+                        letter-spacing:0.02em;
+                        margin-bottom:1.25rem;
+                    ">Connecting to server...</p>
+
+                    <!-- three-dot pulse loader -->
+                    <div style="display:flex;justify-content:center;gap:8px;">
+                        <span class="conn-dot" style="animation-delay:0s"></span>
+                        <span class="conn-dot" style="animation-delay:0.2s"></span>
+                        <span class="conn-dot" style="animation-delay:0.4s"></span>
                     </div>
 
                 </div>
-
             </div>
         </div>
     </div>
+
+    <style>
+        @keyframes pulse-ring {
+            0%   { transform: scale(1);   opacity: 0.8; }
+            70%  { transform: scale(1.35); opacity: 0; }
+            100% { transform: scale(1.35); opacity: 0; }
+        }
+        .conn-dot {
+            display: inline-block;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffc107, #e65100);
+            animation: conn-bounce 1.2s ease-in-out infinite;
+        }
+        @keyframes conn-bounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40%            { transform: scale(1);   opacity: 1;   }
+        }
+    </style>
 
     <script>
 
@@ -178,181 +227,181 @@
             return new bootstrap.Tooltip(tooltipTriggerEl)
         })
 
-        updateZones();
-        checkExclusion();
-        updateNESSSecurityPanelStatus();
-        setInterval(updateZones, 500);
-        setInterval(updateNESSSecurityPanelStatus, 500);
-        setInterval(checkForConectivity, 1000);
-        setInterval(checkExclusion, 5000);
+        // ── WebSocket ────────────────────────────────────────────────────────────
 
-        function toggleArmModal(){
+        const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const wsUrl = wsScheme + '://' + window.location.host + '/ws/panel/';
+
+        let panelSocket = null;
+        let reconnectTimer = null;
+        let hasConnectedBefore = false;
+        let pingTimer = null;
+        let pongTimer = null;
+
+        const connectivityModal = new bootstrap.Modal(document.getElementById('connectivity'), {
+            backdrop: 'static',
+            keyboard: false
+        });
+
+        // Show the modal only if the initial connect takes more than 2s
+        let initialConnectTimer = setTimeout(function () {
+            if (!hasConnectedBefore) connectivityModal.show();
+        }, 2000);
+
+        function connectWebSocket() {
+            panelSocket = new WebSocket(wsUrl);
+
+            panelSocket.onopen = function () {
+                clearTimeout(initialConnectTimer);
+                if (reconnectTimer) {
+                    clearTimeout(reconnectTimer);
+                    reconnectTimer = null;
+                }
+                hasConnectedBefore = true;
+                connectivityModal.hide();
+
+                // Request a fresh zone exclusion status from the NESS panel on connect
+                $.get("{% url 'api-system-status-list' %}", {'check_exclusions': true});
+
+                // Start heartbeat
+                schedulePing();
+            };
+
+            panelSocket.onmessage = function (e) {
+                const data = JSON.parse(e.data);
+                console.log('[WS] message received:', data.type, data);
+
+                if (data.type === 'pong') {
+                    // Server is alive — cancel the dead-connection timer and schedule next ping
+                    clearTimeout(pongTimer);
+                    pongTimer = null;
+                    schedulePing();
+                } else if (data.type === 'full_state') {
+                    data.zones.forEach(applyZoneUpdate);
+                    applySystemUpdate(data.system);
+                } else if (data.type === 'zone_update') {
+                    applyZoneUpdate(data);
+                } else if (data.type === 'system_update') {
+                    applySystemUpdate(data);
+                }
+            };
+
+            panelSocket.onclose = function () {
+                panelSocket = null;
+                clearTimeout(pingTimer);
+                clearTimeout(pongTimer);
+                pingTimer = null;
+                pongTimer = null;
+                document.getElementById('connectivity-message').textContent =
+                    hasConnectedBefore ? 'Connection lost. Reconnecting...' : 'Connecting to server...';
+                connectivityModal.show();
+                reconnectTimer = setTimeout(connectWebSocket, 3000);
+            };
+
+            panelSocket.onerror = function () {
+                panelSocket.close();
+            };
+        }
+
+        function applyZoneUpdate(e) {
+            let zone_status = document.getElementById("zone_indicator_" + e.zone_id);
+            let exclude_status = document.getElementById("zone_exclude_" + e.zone_id);
+
+            if (!zone_status) return;
+
+            if (e.excluded) {
+                zone_status.setAttribute("class", "badge rounded-pill text-bg-info mx-3");
+                zone_status.setAttribute("data-bs-original-title", "Excluded");
+                exclude_status.innerHTML = "Include";
+            } else if (e.sealed === 1) {
+                zone_status.setAttribute("class", "badge rounded-pill text-bg-success mx-3");
+                zone_status.setAttribute("data-bs-original-title", "Ready");
+                exclude_status.innerHTML = "Exclude";
+            } else if (e.sealed === 0) {
+                zone_status.setAttribute("class", "badge rounded-pill text-bg-danger mx-3");
+                zone_status.setAttribute("data-bs-original-title", "Sensor Triggered");
+                exclude_status.innerHTML = "Exclude";
+            } else {
+                zone_status.setAttribute("class", "badge rounded-pill text-bg-warning mx-3");
+                zone_status.setAttribute("data-bs-original-title", "Status Unknown");
+                exclude_status.innerHTML = "Exclude";
+            }
+        }
+
+        function applySystemUpdate(e) {
+            let arm_btns = document.getElementsByName("arm_button");
+            let disarm_btns = document.getElementsByName("disarm_button");
+            let arming_state = document.getElementById("arming_state");
+            let alarm_state = document.getElementById("alarm_state");
+
+            if (isArming) {
+                document.getElementById("disarm_spinner").setAttribute("hidden", "");
+            } else {
+                document.getElementById("arm_away_spinner").setAttribute("hidden", "");
+                document.getElementById("arm_home_spinner").setAttribute("hidden", "");
+            }
+
+            if (e.is_armed_away) {
+                arming_state.innerHTML = "ARMED AWAY";
+            } else if (e.is_armed_home) {
+                arming_state.innerHTML = "ARMED HOME";
+            } else if (e.is_disarmed) {
+                arming_state.innerHTML = "DISARMED";
+            } else {
+                arming_state.innerHTML = "ERROR";
+            }
+
+            if (e.alarm_siren_on) {
+                alarm_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-danger");
+                alarm_state.innerHTML = "SIREN ACTIVE";
+            } else {
+                alarm_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-success");
+                alarm_state.setAttribute("hidden", true);
+                alarm_state.innerHTML = "SIREN IN STANDBY";
+            }
+
+            if (e.is_disarmed) {
+                arming_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-success");
+                arm_btns.forEach(b => { b.removeAttribute("hidden"); });
+                disarm_btns.forEach(b => { b.setAttribute("hidden", ""); });
+            } else if (e.is_armed_home || e.is_armed_away) {
+                arming_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-danger pulse");
+                arm_btns.forEach(b => { b.setAttribute("hidden", ""); });
+                disarm_btns.forEach(b => { b.removeAttribute("hidden"); });
+            } else {
+                arming_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-warning");
+                arm_btns.forEach(b => { b.setAttribute("hidden", ""); });
+                disarm_btns.forEach(b => { b.removeAttribute("hidden"); });
+            }
+        }
+
+        function schedulePing() {
+            pingTimer = setTimeout(function () {
+                if (!panelSocket || panelSocket.readyState !== WebSocket.OPEN) return;
+                panelSocket.send(JSON.stringify({type: 'ping'}));
+                // If no pong within 5s, the connection is silently dead — force a reconnect
+                pongTimer = setTimeout(function () {
+                    panelSocket.close();
+                }, 5000);
+            }, 30000);
+        }
+
+        connectWebSocket();
+
+        // ── UI helpers ───────────────────────────────────────────────────────────
+
+        function toggleArmModal() {
             $('#armModal').modal('toggle');
         }
 
-        function checkExclusion() {
-            $.get("{% url 'api-system-status-list' %}",
-                {
-                    'check_exclusions': true
-                },
-
-                function (data, status) {
-                });
-        }
-
-        function checkForConectivity() {
-
-            try {
-                $.get("{% url 'api-ness_comms-app-list' %}",
-                    {},
-                    function (data, status) {
-                        if (data.connection_valid) {
-                            $('#connectivity').modal('hide');
-                        }
-
-                    })
-                    .fail(function () {
-                        $('#connectivity').modal('show');
-                    });
-
-            } catch (e) {
-                $('#connectivity').modal('show');
-            }
-
-
-        }
-
-        function updateZones() {
-            $.get("{% url 'api-ness_comms-zones-list' %}",
-                function (data, status) {
-
-                    data.forEach(e => {
-
-                        let zone_status = document.getElementById("zone_indicator_" + e.zone_id)
-                        let exclude_status = document.getElementById("zone_exclude_" + e.zone_id)
-
-                        if (e.sealed === 1) {
-                            zone_status.setAttribute("class", "badge rounded-pill text-bg-success mx-3");
-                            zone_status.setAttribute("data-bs-original-title", "Ready");
-                        } else if (e.sealed === 0) {
-                            zone_status.setAttribute("class", "badge rounded-pill text-bg-danger mx-3");
-                            zone_status.setAttribute("data-bs-original-title", "Sensor Triggered");
-                        } else {
-                            zone_status.setAttribute("class", "badge rounded-pill text-bg-warning mx-3");
-                            zone_status.setAttribute("data-bs-original-title", "Status Unknown");
-                        }
-                        if (e.excluded) {
-                            zone_status.setAttribute("class", "badge rounded-pill text-bg-info mx-3");
-                            zone_status.setAttribute("data-bs-original-title", "Excluded");
-
-                            exclude_status.innerHTML = "Include"
-
-                        } else {
-                            exclude_status.innerHTML = "Exclude"
-                        }
-
-                    });
-
-                });
-
-        }
-
-        function updateNESSSecurityPanelStatus() {
-            $.get("{% url 'api-system-status-list' %}",
-                {
-                    'latest_arm_state': true
-                },
-
-                function (data, status) {
-                    let arm_btns = document.getElementsByName("arm_button");
-                    let disarm_btns = document.getElementsByName("disarm_button");
-
-                    if (isArming) {
-                        document.getElementById("disarm_spinner").setAttribute("hidden", "");
-                    } else {
-                        document.getElementById("arm_away_spinner").setAttribute("hidden", "");
-                        document.getElementById("arm_home_spinner").setAttribute("hidden", "");
-                    }
-
-                    data.forEach(e => {
-                        var arming_state = document.getElementById("arming_state")
-                        var alarm_state = document.getElementById("alarm_state")
-
-                        if (e.is_armed_away) {
-                            arming_state.innerHTML = "ARMED AWAY"
-                        } else if (e.is_armed_home) {
-                            arming_state.innerHTML = "ARMED HOME"
-                        } else if (e.is_disarmed) {
-                            arming_state.innerHTML = "DISARMED"
-                        } else {
-                            arming_state.innerHTML = "ERROR"
-                        }
-
-                        if (e.alarm_siren_on) {
-                            alarm_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-danger");
-                            alarm_state.innerHTML = "SIREN ACTIVE"
-                        } else {
-                            alarm_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-success");
-                            alarm_state.setAttribute("hidden", true);
-                            alarm_state.innerHTML = "SIREN IN STANDBY"
-                        }
-
-                        if (e.is_disarmed) {
-                            arming_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-success");
-                            arming_state.setAttribute("data-bs-original-title", "Ready");
-
-                            arm_btns.forEach(b => {
-                                b.removeAttribute("hidden");
-                            });
-
-                            disarm_btns.forEach(b => {
-                                b.setAttribute("hidden", "");
-                            });
-
-                        } else if (e.is_armed_home || e.is_armed_away) {
-                            arming_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-danger pulse");
-                            arming_state.setAttribute("data-bs-original-title", "Ready");
-
-                            arm_btns.forEach(b => {
-                                b.setAttribute("hidden", "");
-                            });
-
-                            disarm_btns.forEach(b => {
-                                b.removeAttribute("hidden");
-                            });
-
-                        } else {
-                            arming_state.setAttribute("class", "btn btn-lg btn-block text-uppercase btn-warning");
-                            arming_state.setAttribute("data-bs-original-title", "Ready");
-
-                            arm_btns.forEach(b => {
-                                b.setAttribute("hidden", "");
-                            });
-
-                            disarm_btns.forEach(b => {
-                                b.removeAttribute("hidden");
-                            });
-                        }
-
-                    });
-
-                });
-        }
-
         function manual_exclude(e) {
-
-            // display spinner
             let spinner = e.firstElementChild;
             spinner.removeAttribute("hidden");
-
             e.setAttribute("disabled", "");
 
             fetch("{% url 'api-system-status-list' %}", {
                 method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
+                headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     "input_command": true,
                     "manual_exclude_zone": true,
@@ -363,90 +412,80 @@
                 .then(response => response.json())
                 .then(response => {
                     spinner.setAttribute("hidden", "");
-
                     $('#ackModal').modal('toggle');
-                })
+                });
         }
 
         function openAckModal(e) {
-
             document.getElementById("ackModalBtnApply").removeAttribute("disabled");
-
-            document.getElementById("ackModalMessage").innerHTML = "Do you really want to toggle the exclude status of ZONE " + e.getAttribute("zone_id") +
-                " (" + e.getAttribute("zone_name") + ")";
-
+            document.getElementById("ackModalMessage").innerHTML =
+                "Do you really want to toggle the exclude status of ZONE " +
+                e.getAttribute("zone_id") + " (" + e.getAttribute("zone_name") + ")";
             document.getElementById("ackModalBtnApply").setAttribute("zone_id", e.getAttribute("zone_id"));
-
             $('#ackModal').modal('toggle');
-
         }
 
       {% if user.enable_panic_mode %}
 
         function openPanicModal(e, trigger) {
             if (e.getAttribute("open_ack_modal")) {
-                $('#ackPanicModal').modal('toggle')
+                $('#ackPanicModal').modal('toggle');
                 $('#armModal').modal('toggle');
-            }
-            else if (e.getAttribute("trigger_panic_alarm")){
+            } else if (e.getAttribute("trigger_panic_alarm")) {
                 fetch("{% url 'api-system-status-list' %}", {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    "input_command": true,
-                    "panic": trigger
+                    method: 'POST',
+                    headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
+                    body: JSON.stringify({"input_command": true, "panic": trigger})
                 })
-            })
-                .then(response => response.json())
-                .then(response => {
-                        console.log(JSON.stringify(response));
-
-                         if (response.user_input_ack){
-                            $('#ackPanicModal').modal('toggle')
+                    .then(response => response.json())
+                    .then(response => {
+                        if (response.user_input_ack) {
+                            $('#ackPanicModal').modal('toggle');
                             $('#armModal').modal('toggle');
-                             alert("Panic alarm has been triggered!")
-                         }
-
-                    }
-                )
+                            alert("Panic alarm has been triggered!");
+                        }
+                    });
             }
         }
 
       {% endif %}
 
         function arming(e, disarm) {
+            isArming = !disarm;
 
-            isArming = !disarm; // Global var which is share with updateArmingState()
-
-            // display spinner
             let spinner = e.firstElementChild;
             spinner.removeAttribute("hidden");
 
+            const armingCmd = e.getAttribute("arming_cmd");
+
             fetch("{% url 'api-system-status-list' %}", {
                 method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
+                headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     "input_command": true,
                     "arming": true,
                     "disarm": disarm,
-                    "arming_cmd": e.getAttribute("arming_cmd")
+                    "arming_cmd": armingCmd
                 })
             })
                 .then(response => response.json())
                 .then(response => {
-                        console.log(JSON.stringify(response));
+                    spinner.setAttribute("hidden", true);
 
-                        if (response.user_input_ack)
-                            spinner.setAttribute("hidden", true);
-                        spinner.setAttribute("hidden", true);
+                    // Optimistic UI update — reflect the expected state immediately
+                    // without waiting for the ESP32 round-trip
+                    if (response.user_input_ack) {
+                        const optimistic = disarm
+                            ? { is_disarmed: true,  is_armed_home: false, is_armed_away: false, alarm_siren_on: false, arming_delayed_active: false }
+                            : armingCmd === 'H'
+                                ? { is_armed_home: true, is_armed_away: false, is_disarmed: false, alarm_siren_on: false, arming_delayed_active: true }
+                                : { is_armed_away: true, is_armed_home: false, is_disarmed: false, alarm_siren_on: false, arming_delayed_active: true };
+                        applySystemUpdate(optimistic);
+
+                        // Close the keypad modal
+                        bootstrap.Modal.getInstance(document.getElementById('armModal'))?.hide();
                     }
-                )
+                });
         }
 
     </script>

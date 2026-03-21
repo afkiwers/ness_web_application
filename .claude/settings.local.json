@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/Scripts/python -c \"import nessclient.event; print\\(dir\\(nessclient.event\\)\\)\")",
+      "Bash(.venv/Scripts/python -c \"from nessclient.event import ZoneUpdate_1_16, ZoneUpdate_17_32, StatusUpdate; print\\(''ZoneUpdate_1_16 Zone:'', list\\(ZoneUpdate_1_16.Zone\\)[:3]\\); print\\(''StatusUpdate RequestID:'', list\\(StatusUpdate.RequestID\\)\\)\")",
+      "Bash(.venv/Scripts/python -c \":*)",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
+    ]
+  }
+}

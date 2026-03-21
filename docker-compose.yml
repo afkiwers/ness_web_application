@@ -1,6 +1,10 @@
-version: '3.8'
-
 services:
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - default
 
   django:
     image: ness_web:django
@@ -12,6 +16,8 @@ services:
       - ./log/gunicorn/:/var/log/gunicorn/
     ports:
       - "8011:8000"
+    depends_on:
+      - redis
     networks:
       - default
 

@@ -1,0 +1,12 @@
+{% extends "two_factor/_base.html" %}
+
+{% block content_wrapper %}
+<div class="login-card">
+    <div class="login-icon">🔒</div>
+    <h1 class="text-center">Ness Panel</h1>
+    <p class="subtitle text-center">
+        {% block subtitle %}Sign in to access your security panel{% endblock %}
+    </p>
+    {% block content %}{% endblock %}
+</div>
+{% endblock content_wrapper %}
