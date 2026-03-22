@@ -15,6 +15,8 @@ services:
       - .env
     volumes:
       - ./NessWebServer:/NessWebServer
+      - static_files:/NessWebServer/static-files
+      - media_files:/NessWebServer/media-files
       - log_gunicorn:/var/log/gunicorn/
     ports:
       - "8011:8000"
@@ -31,8 +33,8 @@ services:
     ports:
       - "62:80"
     volumes:
-      - ./NessWebServer/static-files:/var/www/static
-      - ./NessWebServer/media-files:/var/www/media
+      - static_files:/var/www/static
+      - media_files:/var/www/media
       - log_nginx:/var/log/nginx/
     networks:
       - default
@@ -40,6 +42,8 @@ services:
 volumes:
   log_gunicorn:
   log_nginx:
+  static_files:
+  media_files:
 
 networks:
   default:
