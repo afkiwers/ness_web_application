@@ -21,18 +21,17 @@ A self-hosted web application that bridges the **[Ness2Wifi PCB](https://github.
 ## Architecture
 
 ```
-Browser  ──WebSocket──►  Django / Daphne (ASGI)  ◄──HTTP──  Ness2Wifi ESP (ESP32)
-                               │
-                           Redis (channel layer)
-                               │
-                           MariaDB / MySQL
+Browser ──HTTP/WebSocket──┐
+                          ├──► Nginx ──► Django / Daphne (ASGI) ──► Redis (channel layer)
+ESP32 ────────HTTP────────┘                       │
+                                            MariaDB / MySQL
 ```
 
+- **Nginx** — reverse proxy, terminates connections and serves static files
 - **Django + Daphne** — ASGI server handling both HTTP and WebSocket connections
-- **Redis** — Django Channels layer for broadcasting state updates to all connected clients
-- **MySQL / MariaDB** — persistent storage for users, zones, system status, and event log
-- **Nginx** — reverse proxy, serves static files
-- **Ness2Wifi ESP32** — polls the API for pending user commands and pushes panel state updates
+- **Redis** — Django Channels layer for broadcasting state updates to all connected browser clients simultaneously
+- **MariaDB / MySQL** — persistent storage for users, zones, system status, and event log
+- **Ness2Wifi ESP32** — polls Django for pending user commands and pushes panel state updates via HTTP
 
 ---
 
