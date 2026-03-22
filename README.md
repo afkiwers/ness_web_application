@@ -47,14 +47,14 @@ Click the **User Keypad** button to open the arming modal. Available actions:
 
 | Button | Description |
 |---|---|
-| **ARMED AWAY** | Arms the panel in Away mode |
-| **ARMED HOME** | Arms the panel in Home mode |
+| **AWAY** | Arms the panel in Away mode |
+| **HOME** | Arms the panel in Home mode |
 | **DISARM** | Disarms the panel |
 | **PANIC** | Triggers a panic alarm (privileged users only) |
 
 The UI does not optimistically update — it waits for the ESP to confirm the state change before reflecting it on screen.
 
-![Web User Keypad](images/web_user_keypad.png)
+![Web User Keypad - Panic](images/web_user_keypad_panic.png)
 
 If a command is still pending when you reload the page, the keypad reopens automatically with the spinner on the appropriate button.
 
