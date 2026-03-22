@@ -150,14 +150,16 @@ Synology kernels do not support the seccomp syscall filter, which causes `docker
 ```sh
 docker build -t ness_web:django ./NessWebServer
 docker build -t ness_web:nginx ./nginx
-docker save ness_web:django ness_web:nginx | gzip > ness_images.tar.gz
+docker save ness_web:django | gzip > ness_django.tar.gz
+docker save ness_web:nginx  | gzip > ness_nginx.tar.gz
 ```
 
 **Windows (PowerShell):**
 ```powershell
 docker build -t ness_web:django ./NessWebServer
 docker build -t ness_web:nginx ./nginx
-docker save ness_web:django ness_web:nginx -o ness_images.tar
+docker save ness_web:django -o ness_django.tar
+docker save ness_web:nginx  -o ness_nginx.tar
 ```
 
 ### 2. Transfer to the NAS
@@ -166,10 +168,11 @@ Copy `ness_images.tar` (or `.tar.gz`) to the NAS via SMB, SCP, or any other meth
 
 ### 3. Load the images on the NAS
 
-SSH into the NAS and run:
+SSH into the NAS and load each image separately (loading them combined in one tar can hit the btrfs snapshot depth limit):
 
 ```sh
-docker load < ness_images.tar
+docker load < ness_django.tar
+docker load < ness_nginx.tar
 ```
 
 ### 4. Start the stack
@@ -179,6 +182,14 @@ docker-compose up -d
 ```
 
 `docker-compose up` without `--build` will use the pre-loaded images and never triggers a build, so the seccomp issue is completely bypassed. Repeat the build-transfer-load steps whenever you update the application.
+
+### 5. WebSocket support in DSM reverse proxy
+
+If you expose the app through a Synology DSM reverse proxy rule (e.g. for HTTPS via a custom domain), you must enable WebSocket support on the proxy rule or the browser will show "Connection lost":
+
+1. **Control Panel → Login Portal → Advanced → Reverse Proxy**
+2. Edit your rule → **Custom Header → Create → WebSocket**
+3. DSM will add the required `Upgrade` and `Connection` headers automatically
 
 ---
 
@@ -190,6 +201,14 @@ Users are managed through the Django admin panel at `/admin/`. Key per-user sett
 |---|---|
 | `panel_code` | The user's PIN code sent to the NESS panel when arming/disarming |
 | `enable_panic_mode` | Grants access to the Panic button in the keypad |
+
+### ESP32 API Key
+
+The ESP32 authenticates using an API key sent as `Authorization: Api-Key <key>`. Create one via:
+
+> **Admin → API Keys → API Keys → Add**
+
+The full key (shown only once on creation) must be configured in the ESP32 firmware. The key is stored hashed in the database and cannot be retrieved after creation.
 
 ---
 
@@ -209,7 +228,7 @@ The REST API is available under `/api/`. Authentication options:
 
 - **Session** — standard browser session cookie
 - **Token** — `Authorization: Token <token>` header
-- **API Key** — `X-Api-Key: <key>` header (for ESP integration)
+- **API Key** — `Authorization: Api-Key <key>` header (for ESP integration)
 
 Key endpoints:
 
@@ -233,3 +252,5 @@ The browser connects to `ws[s]://<host>/ws/panel/` for real-time updates. Messag
 | `zone_update` | Server → Client | Single zone state change |
 | `system_update` | Server → Client | System state change (armed, disarmed, siren, etc.) |
 | `ping` / `pong` | Both | 30-second heartbeat; connection is closed if no pong within 5 seconds |
+
+> **Note on update speed:** WebSocket updates are only as fast as the ESP's polling cycle. The ESP polls Django via HTTP, which then broadcasts to all connected browser clients via WebSocket. The browser receives updates instantly once Django broadcasts, but the bottleneck is the ESP poll interval. The advantage of WebSockets is that all connected clients update simultaneously without each browser independently polling Django.
