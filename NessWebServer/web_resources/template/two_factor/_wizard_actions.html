@@ -1,0 +1,13 @@
+{% load i18n %}
+
+<div class="d-flex justify-content-between align-items-center mt-3 gap-2">
+    {% if wizard.steps.prev %}
+        <button name="wizard_goto_step" type="submit"
+                value="{{ wizard.steps.prev }}"
+                class="btn btn-secondary">{% trans "Back" %}</button>
+    {% else %}
+        <span></span>
+    {% endif %}
+
+    <button type="submit" class="btn btn-primary flex-grow-1">{% trans "Logon" %}</button>
+</div>

@@ -2,42 +2,153 @@
 {% load i18n static crispy_forms_tags %}
 
 {% block header %}
+<style>
+    body {
+        background-color: #0d0d0d;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 420px;
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        border-radius: 16px;
+        padding: 2.5rem;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+    }
+
+    .login-icon {
+        width: 64px;
+        height: 64px;
+        background: linear-gradient(135deg, #ffc107, #e65100);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        font-size: 1.8rem;
+    }
+
+    .login-card h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 0.25rem;
+    }
+
+    .login-card .subtitle {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin-bottom: 2rem;
+    }
+
+    .login-card label {
+        color: #adb5bd;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.4rem;
+    }
+
+    .login-card .form-control {
+        background: #111111;
+        border: 1px solid #333;
+        color: #fff;
+        border-radius: 8px;
+        padding: 0.65rem 1rem;
+        font-size: 0.9375rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .login-card .form-control:focus {
+        background: #111111;
+        border-color: #ffc107;
+        box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.15);
+        color: #fff;
+    }
+
+    .login-card .form-control::placeholder {
+        color: #555;
+    }
+
+    .btn-login {
+        width: 100%;
+        padding: 0.75rem;
+        background: linear-gradient(135deg, #ffc107, #e65100);
+        border: none;
+        border-radius: 8px;
+        color: #000;
+        font-weight: 700;
+        font-size: 0.9375rem;
+        letter-spacing: 0.03em;
+        margin-top: 0.5rem;
+        transition: opacity 0.2s, transform 0.1s;
+    }
+
+    .btn-login:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        color: #000;
+    }
+
+    .btn-login:active {
+        transform: translateY(0);
+    }
+
+    .forgot-link {
+        color: #6c757d;
+        font-size: 0.8125rem;
+        text-decoration: none;
+    }
+
+    .forgot-link a {
+        color: #ffc107;
+        text-decoration: none;
+    }
+
+    .forgot-link a:hover {
+        text-decoration: underline;
+    }
+
+    /* Override crispy error styles */
+    .invalid-feedback, .text-danger {
+        font-size: 0.8rem;
+    }
+
+    .is-invalid {
+        border-color: #dc3545 !important;
+    }
+</style>
 {% endblock header %}
 
 {% block content %}
 
-    <div id="cover" class="min-vh-100 bg-dark">
-        <div id="cover-caption">
-            <div class="container">
-                <div class="row text-white">
+<div class="login-card">
 
-                    <div class="col-xl-5 col-lg-6 col-md-8 col-sm-10 mx-auto text-center form p-4">
-                        <h4 class="pt-5">User Login</h4>
+    <div class="login-icon">🔒</div>
 
-                        <form method="POST">
-                            {% csrf_token %}
+    <h1 class="text-center">Ness Panel</h1>
+    <p class="subtitle text-center">Sign in to access your security panel</p>
 
-                            <fieldset class="form-group text-left p-2">
-                                {{ form|crispy }}
+    <form method="POST">
+        {% csrf_token %}
 
-                                <div class="p-2">
-                                    <small>
-                                        Forgot your Password?
-                                        <a class="ml-2 text-danger" href="{% url 'password_reset' %}">Reset Now!</a>
-                                    </small>
+        {{ form|crispy }}
 
-                                </div>
-                            </fieldset>
+        <p class="forgot-link mt-2 mb-3">
+            Forgot your password?
+            <a href="{% url 'password_reset' %}">Reset it</a>
+        </p>
 
-                            <div class="form-group">
-                                <button class="btn btn-outline-warning float-right" type="submit">Log In</button>
-                            </div>
+        <button class="btn btn-login" type="submit">Sign In</button>
 
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    </form>
+
+</div>
 
 {% endblock content %}

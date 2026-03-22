@@ -1,35 +1,256 @@
-# NESS 2 Web API
+# NESS 2 Web Application
 
-This web API complemets the **[Ness2Wifi Bridge](https://github.com/afkiwers/ness2web_pcb)** which is a low-cost PCB that connects the NESS Security Panel DX8/16 to the WIFI network. 
+A self-hosted web application that bridges the **[Ness2Wifi PCB](https://github.com/afkiwers/ness2web_pcb)** to a modern browser-based UI. The Ness2Wifi bridge connects a NESS DX8/DX16 security panel to your WiFi network, and this application provides real-time monitoring and control over any device with a web browser.
 
-## Web Application
-The Ness 2 Web API includes a built-in web application designed for ease of use and accessibility. It supports multiple users at the same time, allowing simultaneous access.
+---
 
-The application can be opened on any device with a modern web browser such as a desktop, laptop, tablet, or smartphone. There is no need to download or install any additional apps. Simply navigate to the provided URL, log in if required, and start using the application.
+## Features
 
-This setup provides a consistent and hassle-free experience across devices, making it quick and easy to get started with minimal configuration.
+- Real-time zone and system status via WebSockets — no polling, instant updates
+- Arm Away, Arm Home, and Disarm from any browser
+- Optional Panic mode (per-user permission, requires confirmation)
+- Zone exclusion management
+- Multi-user support with two-factor authentication (TOTP)
+- Brute-force lockout (django-axes) with configurable limits
+- REST API with token and API key authentication
+- Persistent sessions (30-day cookies, survive browser close)
+- Deployed via Docker Compose with Nginx and Redis
+
+---
+
+## Architecture
+
+```
+Browser  ──WebSocket──►  Django / Daphne (ASGI)  ◄──HTTP──  Ness2Wifi ESP (ESP32)
+                               │
+                           Redis (channel layer)
+                               │
+                           MariaDB / MySQL
+```
+
+- **Django + Daphne** — ASGI server handling both HTTP and WebSocket connections
+- **Redis** — Django Channels layer for broadcasting state updates to all connected clients
+- **MySQL / MariaDB** — persistent storage for users, zones, system status, and event log
+- **Nginx** — reverse proxy, serves static files
+- **Ness2Wifi ESP32** — polls the API for pending user commands and pushes panel state updates
+
+---
+
+## Web Interface
+
+The main dashboard displays all zones and the current system state. It updates in real time as the panel reports changes.
 
 ![Web Interface](images/web_interface.png)
 
-### Arming the System
-To arm the system, use the keypad interface shown below. There are three options available: **ARM**, **DISARM**, and **PANIC**. However, the **PANIC** option is only accessible to users with special privileges; primarily to prevent accidental activation, such as by children. Regular users will only see and be able to use the **ARM** and **DISARM** functions.
+### User Keypad
 
-Please navigate to the next section for details on PANIC mode.
+Click the **User Keypad** button to open the arming modal. Available actions:
+
+| Button | Description |
+|---|---|
+| **ARMED AWAY** | Arms the panel in Away mode |
+| **ARMED HOME** | Arms the panel in Home mode |
+| **DISARM** | Disarms the panel |
+| **PANIC** | Triggers a panic alarm (privileged users only) |
+
+The UI does not optimistically update — it waits for the ESP to confirm the state change before reflecting it on screen.
 
 ![Web User Keypad](images/web_user_keypad.png)
 
-Once the user presses **ARMED HOME** or **ARMED AWAY**, the system will command the NESS Security panel accordingly, and the interface will change to reflect the current state of the alarm system.
+If a command is still pending when you reload the page, the keypad reopens automatically with the spinner on the appropriate button.
+
+### Armed State
+
+Once armed the status button pulses red and the arm buttons are replaced with a Disarm button.
 
 ![Web User Keypad - ARMED Away](images/web_interface_armed_home.png)
 
 ### PANIC Mode
 
-If the user has permission to access PANIC mode, the keypad will display a third option at the top labeled **PANIC**.
+Users with `enable_panic_mode` permission see a **PANIC** button at the top of the keypad.
 
 ![Web User Keypad - Panic](images/web_user_keypad_panic.png)
 
-When this button is pressed, a confirmation dialog will appear that must be acknowledged. At this stage, the user still has the option to abort.
+Pressing it opens a confirmation dialog before anything is sent to the panel.
 
 ![Web User Keypad - Panic ACK](images/web_user_keypad_panic_ack.png)
 
-Once the user selects ***SET OFF THE ALARM***, the NESS Security panel will be triggered accordingly.
+---
+
+## Deployment
+
+### Prerequisites
+
+- Docker and Docker Compose
+- A MySQL / MariaDB database (can be external, e.g. on a NAS or home server)
+- A Redis instance (included in the Compose stack)
+- A Ness2Wifi ESP32 bridge on the same network
+
+### 1. Clone the repository
+
+```sh
+git clone https://github.com/afkiwers/ness2web_pcb
+cd ness_web_application
+```
+
+### 2. Configure environment variables
+
+Copy the example and fill in your values:
+
+```sh
+cp .env.example .env
+```
+
+| Variable | Description |
+|---|---|
+| `SECRET_KEY` | Django secret key — keep this private. Escape any `$` with `$$` |
+| `DEBUG` | `True` for development, `False` for production |
+| `ALLOWED_HOSTS` | Comma-separated list of allowed hostnames / `*` for any |
+| `CSRF_TRUSTED_ORIGINS` | Full origin URLs that are allowed to make CSRF-protected requests |
+| `DB_ENGINE` | `django.db.backends.mysql` |
+| `DB_NAME` | Database name |
+| `DB_USER` | Database user |
+| `DB_PASSWORD` | Database password |
+| `DB_HOST` | Database host (IP or hostname) |
+| `DB_PORT` | Database port (default `3306`) |
+| `DB_OPTIONS` | SQL mode, e.g. `traditional` |
+| `REDIS_HOST` | Redis hostname (default `redis` — the Compose service name) |
+| `REDIS_PORT` | Redis port (default `6379`) |
+| `AXES_ENABLED` | `True` to enable brute-force lockout, `False` to disable |
+
+> **Note:** If your `SECRET_KEY` contains a `$` character, double it (`$$`) to prevent Docker Compose from treating it as a variable substitution.
+
+### 3. Build and start
+
+```sh
+docker-compose build
+docker-compose up -d
+```
+
+The application will be available at `http://<host>:8011`.
+
+### 4. Apply migrations and create a superuser
+
+On first run, migrations are applied automatically by the entrypoint. A default superuser is created if no users exist yet. You can also run them manually:
+
+```sh
+docker-compose exec django python manage.py migrate
+docker-compose exec django python manage.py createsuperuser
+```
+
+---
+
+## Deploying on a Synology NAS
+
+Synology kernels do not support the seccomp syscall filter, which causes `docker-compose build` to fail during `apt-get install`. The workaround is to **build the images on a regular machine** (Windows/Mac/Linux with Docker Desktop) and transfer them to the NAS.
+
+### 1. Build on your dev machine
+
+**Linux / macOS:**
+```sh
+docker build -t ness_web:django ./NessWebServer
+docker build -t ness_web:nginx ./nginx
+docker save ness_web:django | gzip > ness_django.tar.gz
+docker save ness_web:nginx  | gzip > ness_nginx.tar.gz
+```
+
+**Windows (PowerShell):**
+```powershell
+docker build -t ness_web:django ./NessWebServer
+docker build -t ness_web:nginx ./nginx
+docker save ness_web:django -o ness_django.tar
+docker save ness_web:nginx  -o ness_nginx.tar
+```
+
+### 2. Transfer to the NAS
+
+Copy `ness_images.tar` (or `.tar.gz`) to the NAS via SMB, SCP, or any other method.
+
+### 3. Load the images on the NAS
+
+SSH into the NAS and load each image separately (loading them combined in one tar can hit the btrfs snapshot depth limit):
+
+```sh
+docker load < ness_django.tar
+docker load < ness_nginx.tar
+```
+
+### 4. Start the stack
+
+```sh
+docker-compose up -d
+```
+
+`docker-compose up` without `--build` will use the pre-loaded images and never triggers a build, so the seccomp issue is completely bypassed. Repeat the build-transfer-load steps whenever you update the application.
+
+### 5. WebSocket support in DSM reverse proxy
+
+If you expose the app through a Synology DSM reverse proxy rule (e.g. for HTTPS via a custom domain), you must enable WebSocket support on the proxy rule or the browser will show "Connection lost":
+
+1. **Control Panel → Login Portal → Advanced → Reverse Proxy**
+2. Edit your rule → **Custom Header → Create → WebSocket**
+3. DSM will add the required `Upgrade` and `Connection` headers automatically
+
+---
+
+## User Management
+
+Users are managed through the Django admin panel at `/admin/`. Key per-user settings:
+
+| Field | Description |
+|---|---|
+| `panel_code` | The user's PIN code sent to the NESS panel when arming/disarming |
+| `enable_panic_mode` | Grants access to the Panic button in the keypad |
+
+### ESP32 API Key
+
+The ESP32 authenticates using an API key sent as `Authorization: Api-Key <key>`. Create one via:
+
+> **Admin → API Keys → API Keys → Add**
+
+The full key (shown only once on creation) must be configured in the ESP32 firmware. The key is stored hashed in the database and cannot be retrieved after creation.
+
+---
+
+## Security
+
+- All login attempts are rate-limited via **django-axes** (5 failures triggers a 1-hour lockout by IP and username/user-agent)
+- Two-factor authentication (TOTP) is enforced via **django-two-factor-auth**
+- Sessions last 30 days and survive browser close, but are invalidated on explicit logout
+- API endpoints support both session auth and token/API key auth for ESP integration
+- CSRF protection is enforced on all state-changing web requests
+
+---
+
+## API
+
+The REST API is available under `/api/`. Authentication options:
+
+- **Session** — standard browser session cookie
+- **Token** — `Authorization: Token <token>` header
+- **API Key** — `Authorization: Api-Key <key>` header (for ESP integration)
+
+Key endpoints:
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/ness_comms-system-status/` | Current system state |
+| `POST /api/ness_comms-system-status/` | Submit a user command (arm, disarm, panic, zone exclude) |
+| `GET /api/ness_comms-user-inputs/?pending=true` | Pending commands not yet acknowledged by the ESP |
+| `PATCH /api/ness_comms-user-inputs/<id>/` | Mark a command as received (used by ESP) |
+| `GET /api/ness_comms-zones/` | Zone list and status |
+
+---
+
+## WebSocket
+
+The browser connects to `ws[s]://<host>/ws/panel/` for real-time updates. Message types:
+
+| Type | Direction | Description |
+|---|---|---|
+| `full_state` | Server → Client | Full snapshot of zones and system status on connect |
+| `zone_update` | Server → Client | Single zone state change |
+| `system_update` | Server → Client | System state change (armed, disarmed, siren, etc.) |
+| `ping` / `pong` | Both | 30-second heartbeat; connection is closed if no pong within 5 seconds |
+
+> **Note on update speed:** WebSocket updates are only as fast as the ESP's polling cycle. The ESP polls Django via HTTP, which then broadcasts to all connected browser clients via WebSocket. The browser receives updates instantly once Django broadcasts, but the bottleneck is the ESP poll interval. The advantage of WebSockets is that all connected clients update simultaneously without each browser independently polling Django.

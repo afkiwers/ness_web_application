@@ -16,24 +16,34 @@ Including another URLconf
 from django.contrib import admin
 from django.conf.urls.static import static
 from django.urls import path, include
+from django.views.generic import TemplateView
 from rest_framework.authtoken import views as rest_views
+from two_factor.urls import urlpatterns as tf_urls
 
 from NessWebServer import settings
 from NessWebServer.api.router import api_logout, main_router
+from users.views import locked_out
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path('', include(tf_urls)),
     path('user/', include('users.urls')),
     path('', include('ness_comms.urls')),
+    path('locked-out/', locked_out, name='locked-out'),
 
     path('api/', include(main_router.urls)),
     path('api/api-token-auth/', rest_views.obtain_auth_token, name='api-token-auth'),
     path('api/logout/', api_logout, name='api-logout'),
+
+    # Service worker must be served from the root scope
+    path('sw.js', TemplateView.as_view(
+        template_name='sw.js',
+        content_type='application/javascript',
+    ), name='sw'),
 ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 handler404 = 'error_page.views.handler404'
 handler500 = 'error_page.views.handler500'

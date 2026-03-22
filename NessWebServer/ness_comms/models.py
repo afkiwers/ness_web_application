@@ -1,4 +1,5 @@
 import pytz
+from django.conf import settings
 from django.db import models
 import logging
 
@@ -113,6 +114,9 @@ class SystemStatus(models.Model):
 
     last_updated_at = models.DateTimeField(auto_now=True)  # Updates on every save
 
+    def __str__(self):
+        return f'SystemStatus ({self.id})'
+
     def save(self, *args, **kwargs):
         # Ensure only one is True
         true_flags = [
@@ -144,3 +148,34 @@ class SystemStatus(models.Model):
             self.is_armed_away = False
 
         super().save(*args, **kwargs)
+
+
+class AlarmEvent(models.Model):
+
+    class EventType(models.TextChoices):
+        ZONE_SEALED = 'ZONE_SEALED', 'Zone Sealed'
+        ZONE_TRIGGERED = 'ZONE_TRIGGERED', 'Zone Triggered'
+        ZONE_EXCLUDED = 'ZONE_EXCLUDED', 'Zone Excluded'
+        ZONE_INCLUDED = 'ZONE_INCLUDED', 'Zone Included'
+        ARMED_AWAY = 'ARMED_AWAY', 'Armed Away'
+        ARMED_HOME = 'ARMED_HOME', 'Armed Home'
+        DISARMED = 'DISARMED', 'Disarmed'
+        SIREN_ON = 'SIREN_ON', 'Siren Activated'
+        SIREN_OFF = 'SIREN_OFF', 'Siren Deactivated'
+        PANIC_TRIGGERED = 'PANIC_TRIGGERED', 'Panic Triggered'
+
+    class Meta:
+        verbose_name = "Alarm Event"
+        verbose_name_plural = "Alarm Events"
+        ordering = ['-timestamp']
+
+    event_type = models.CharField(max_length=20, choices=EventType.choices)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    zone = models.ForeignKey(Zone, null=True, blank=True, on_delete=models.SET_NULL)
+    triggered_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+    )
+    detail = models.CharField(max_length=200, blank=True, default='')
+
+    def __str__(self):
+        return f'{self.get_event_type_display()} at {self.timestamp}'

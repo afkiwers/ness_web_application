@@ -21,15 +21,21 @@ CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS')
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'crispy_forms',
     'crispy_bootstrap5',
     'axes',
+    'django_otp',
+    'django_otp.plugins.otp_static',
+    'django_otp.plugins.otp_totp',
+    'two_factor',
     'ness_comms',
     'users',
     'error_page',
@@ -39,10 +45,12 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django_otp.middleware.OTPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.locale.LocaleMiddleware',
@@ -69,7 +77,16 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'NessWebServer.wsgi.application'
+ASGI_APPLICATION = 'NessWebServer.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [(env('REDIS_HOST', default='redis'), env.int('REDIS_PORT', default=6379))],
+        },
+    },
+}
 
 AUTHENTICATION_BACKENDS = [
     'axes.backends.AxesBackend',
@@ -105,7 +122,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-API_KEY_CUSTOM_HEADER = "HTTP_X_API_KEY"
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -134,6 +150,7 @@ PROJECT_DIR = os.path.join(BASE_DIR)
 STATIC_ROOT = os.path.join(PROJECT_DIR, 'static-files')
 
 STATIC_URL = '/static/'
+WHITENOISE_USE_FINDERS = True  # Serve from STATICFILES_DIRS without collectstatic
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'web_resources', 'static'),
@@ -150,12 +167,17 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000000
 
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
-LOGIN_URL = 'login'
+LOGIN_URL = 'two_factor:login'
 
+# Keep sessions alive until explicit logout (don't expire on browser close)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 days
+
+AXES_ENABLED = env.bool('AXES_ENABLED', default=True)
 AXES_FAILURE_LIMIT = 5
 AXES_RESET_ON_SUCCESS = True
 AXES_LOCKOUT_PARAMETERS = ["ip_address", ["username", "user_agent"]]
-AXES_LOCKOUT_URL = 'locked-out'
+AXES_LOCKOUT_URL = '/locked-out/'
 AXES_COOLOFF_TIME = 1
 
 AXES_IPWARE_META_PRECEDENCE_ORDER = [
@@ -165,3 +187,4 @@ AXES_IPWARE_META_PRECEDENCE_ORDER = [
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
+

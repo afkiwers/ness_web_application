@@ -1,12 +1,19 @@
 {% load static crispy_forms_tags %}
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
 
     <title>Ness D8x/D16x Alarm Control Panel - Dashboard</title>
 
     {% include 'header.html' %}
+
+    <!-- PWA / iOS home screen -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Ness Panel">
+    <link rel="apple-touch-icon" href="{% static 'assets/favicons/apple-touch-icon.png' %}">
 
     {% block header %}{% endblock %}
 
@@ -31,6 +38,22 @@
             <div class="offcanvas-body">
                 <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
 
+                    <li class="nav-item">
+                        <a class="nav-link text-light" href="{% url 'home' %}">Dashboard</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link text-light" href="{% url 'alarm-history' %}">History</a>
+                    </li>
+
+                {% if user.is_staff %}
+
+                    <li class="nav-item">
+                        <a class="nav-link text-light" href="{% url 'zone-settings' %}">Zone Settings</a>
+                    </li>
+
+                {% endif %}
+
                 {% if user.is_superuser %}
 
                     <li class="nav-item">
@@ -38,13 +61,20 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link" target="_blank" href="{% url 'home' %}admin/">ADMIN</a>
+                        <a class="nav-link" target="_blank" href="{% url 'home' %}admin/">Admin</a>
                     </li>
 
-                     {% endif %}
+                {% endif %}
 
-                    <li class="nav-item ">
-                        <a class="nav-link text-light" href="{% url 'logout' %}">LOGOUT</a>
+                    <li class="nav-item">
+                        <a class="nav-link text-light" href="{% url 'logout' %}">Logout</a>
+                    </li>
+
+                    <li class="nav-item d-flex align-items-center mt-2 border-top border-secondary pt-2">
+                        <label class="form-check-label text-light me-2" for="darkModeSwitch">Dark Mode</label>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="darkModeSwitch" checked>
+                        </div>
                     </li>
 
                 </ul>
@@ -56,9 +86,101 @@
     </div>
 </nav>
 
+<script>
+    (function () {
+        const html = document.documentElement;
+        const toggle = document.getElementById('darkModeSwitch');
+        const stored = localStorage.getItem('theme');
+
+        // Apply stored preference, defaulting to dark
+        const theme = stored || 'dark';
+        html.setAttribute('data-bs-theme', theme);
+        toggle.checked = (theme === 'dark');
+
+        toggle.addEventListener('change', function () {
+            const next = this.checked ? 'dark' : 'light';
+            html.setAttribute('data-bs-theme', next);
+            localStorage.setItem('theme', next);
+        });
+    })();
+</script>
+
 <div class="container pt-md-4 pt-2">
     {% block content %}{% endblock content %}
 </div>
+
+
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js');
+    }
+</script>
+
+<!-- Session timeout warning modal -->
+<div class="modal fade" id="sessionTimeoutModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-warning">
+            <div class="modal-header border-warning">
+                <h6 class="modal-title text-warning">Session Expiring</h6>
+            </div>
+            <div class="modal-body">
+                <p class="mb-1">You've been inactive. You will be logged out in</p>
+                <p class="text-center fs-4 fw-bold text-warning mb-0" id="sessionCountdown">60</p>
+                <p class="text-center text-muted mb-0">seconds</p>
+            </div>
+            <div class="modal-footer border-warning">
+                <button type="button" class="btn btn-warning w-100" id="stayLoggedInBtn">Stay Logged In</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const IDLE_TIMEOUT = 10 * 60 * 1000;   // 10 minutes idle before warning
+    const COUNTDOWN = 60;                   // seconds to countdown before logout
+    const LOGOUT_URL = "{% url 'logout' %}";
+
+    let idleTimer = null;
+    let countdownInterval = null;
+    let secondsLeft = COUNTDOWN;
+
+    const modal = new bootstrap.Modal(document.getElementById('sessionTimeoutModal'), {});
+    const countdownEl = document.getElementById('sessionCountdown');
+    const stayBtn = document.getElementById('stayLoggedInBtn');
+
+    function resetIdle() {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(showWarning, IDLE_TIMEOUT);
+    }
+
+    function showWarning() {
+        secondsLeft = COUNTDOWN;
+        countdownEl.textContent = secondsLeft;
+        modal.show();
+        countdownInterval = setInterval(() => {
+            secondsLeft--;
+            countdownEl.textContent = secondsLeft;
+            if (secondsLeft <= 0) {
+                clearInterval(countdownInterval);
+                window.location.href = LOGOUT_URL;
+            }
+        }, 1000);
+    }
+
+    stayBtn.addEventListener('click', () => {
+        clearInterval(countdownInterval);
+        modal.hide();
+        resetIdle();
+    });
+
+    ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'].forEach(evt => {
+        document.addEventListener(evt, resetIdle, { passive: true });
+    });
+
+    resetIdle();
+})();
+</script>
 
 </body>
 

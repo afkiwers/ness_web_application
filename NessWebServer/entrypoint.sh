@@ -1,5 +1,9 @@
 #!/bin/sh
 
+mkdir -p /var/log/gunicorn
+mkdir -p /app/static-files
+mkdir -p /app/media-files
+
 python manage.py collectstatic --no-input
 python manage.py makemigrations
 python manage.py migrate
@@ -15,6 +19,6 @@ if not User.objects.filter(username=username).exists():
     User.objects.create_superuser(username, email, password)
 EOF
 
-gunicorn -c gunicorn.conf NessWebServer.wsgi
+daphne -b 0.0.0.0 -p 8000 --access-log /var/log/gunicorn/daphne-access.log NessWebServer.asgi:application
 
 exec "$@"

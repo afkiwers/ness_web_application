@@ -21,7 +21,7 @@
     }
     .auth-icon {
         width: 64px; height: 64px;
-        background: linear-gradient(135deg, #28a745, #20c997);
+        background: linear-gradient(135deg, #dc3545, #a71d2a);
         border-radius: 16px;
         display: flex; align-items: center; justify-content: center;
         margin: 0 auto 1.5rem;
@@ -34,17 +34,17 @@
         background: linear-gradient(135deg, #ffc107, #e65100);
         border: none; border-radius: 8px; color: #000;
         font-weight: 700; font-size: 0.9375rem; text-decoration: none;
-        margin-top: 1.5rem; transition: opacity 0.2s, transform 0.1s;
+        margin-top: 1.5rem; transition: opacity 0.2s;
     }
-    .btn-auth:hover { opacity: 0.9; transform: translateY(-1px); color: #000; }
+    .btn-auth:hover { opacity: 0.9; color: #000; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="auth-card">
-    <div class="auth-icon">✅</div>
-    <h1>Password Updated</h1>
-    <p>Your password has been set successfully. You can now sign in with your new password.</p>
-    <a href="{% url 'two_factor:login' %}" class="btn-auth">Sign In</a>
+    <div class="auth-icon">🔒</div>
+    <h1>Account Locked</h1>
+    <p>Too many failed login attempts. Your account has been temporarily locked. Please try again later.</p>
+    <a href="{% url 'two_factor:login' %}" class="btn-auth">Try Again</a>
 </div>
 {% endblock %}
