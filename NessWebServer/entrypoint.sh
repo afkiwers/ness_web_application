@@ -1,8 +1,8 @@
 #!/bin/sh
 
 mkdir -p /var/log/gunicorn
-mkdir -p /NessWebServer/static-files
-mkdir -p /NessWebServer/media-files
+mkdir -p /app/static-files
+mkdir -p /app/media-files
 
 python manage.py collectstatic --no-input
 python manage.py makemigrations
