@@ -28,6 +28,7 @@ class NessSystemStatusViewSet(viewsets.ModelViewSet):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication, TokenAuthentication)
     permission_classes = [IsAuthenticated | HasAPIKey]
 
+
     serializer_class = NessSystemStatusSerializer
     queryset = SystemStatus.objects.all()
 
