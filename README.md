@@ -74,6 +74,22 @@ Pressing it opens a confirmation dialog before anything is sent to the panel.
 
 ![Web User Keypad - Panic ACK](images/web_user_keypad_panic_ack.png)
 
+### Alarm Event History
+
+The history page (`/history/`) shows the last 100 alarm events in a live-updating table. New events are prepended to the top instantly via WebSocket — no page refresh required. Events are colour-coded by type:
+
+| Event | Colour |
+|---|---|
+| Armed Away / Armed Home | Red |
+| Disarmed | Green |
+| Siren On / Panic | Red (pulsing) |
+| Zone Triggered | Orange |
+| Zone Sealed | Green |
+| Zone Excluded / Included | Teal / Purple |
+
+![Web User Keypad - Panic ACK](images/web_interface_history.png)
+
+
 ---
 
 ## Deployment
