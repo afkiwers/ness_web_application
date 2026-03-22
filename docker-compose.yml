@@ -9,6 +9,8 @@ services:
   django:
     image: ness_web:django
     build: ./NessWebServer
+    security_opt:
+      - seccomp:unconfined
     env_file:
       - .env
     volumes:
