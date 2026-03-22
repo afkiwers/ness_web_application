@@ -140,23 +140,100 @@
     {% if user.enable_panic_mode %}
 
         <!-- Panic Ack Modal -->
-        <div class="modal fade" id="ackPanicModal" tabindex="-1" aria-labelledby="ackModalLabel" aria-hidden="true">
+        <div class="modal fade" id="ackPanicModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title text-uppercase">Confirm panic alarm</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-content border-0" style="
+                    background: #0d0d0d;
+                    border-radius: 16px;
+                    overflow: hidden;
+                    box-shadow: 0 0 0 1px rgba(220,53,69,0.4), 0 30px 60px rgba(0,0,0,0.8);
+                ">
+                    <!-- pulsing red top bar -->
+                    <div style="
+                        height: 5px;
+                        background: linear-gradient(90deg, #ff0000, #ff4444, #ff0000);
+                        background-size: 200% 100%;
+                        animation: panic-bar 1.2s linear infinite;
+                    "></div>
+
+                    <div class="modal-body text-center p-4">
+
+                        <!-- siren icon -->
+                        <div style="
+                            width: 80px; height: 80px;
+                            margin: 0 auto 1.25rem;
+                            background: rgba(220,53,69,0.15);
+                            border-radius: 50%;
+                            display: flex; align-items: center; justify-content: center;
+                            font-size: 2.2rem;
+                            border: 2px solid rgba(220,53,69,0.4);
+                            animation: panic-pulse 1s ease-in-out infinite;
+                        ">&#x1F6A8;</div>
+
+                        <h4 style="color: #ff4444; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.5rem;">
+                            Emergency Alarm
+                        </h4>
+                        <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            This action cannot be undone
+                        </p>
+
+                        <p style="color: #ccc; font-size: 0.95rem; line-height: 1.6; margin-bottom: 2rem;">
+                            The <strong style="color:#fff;">Panic Alarm</strong> will immediately trigger the NESS security panel.
+                            Only use this in a genuine emergency involving serious harm or threat.
+                        </p>
+
+                        <div class="d-grid gap-2">
+                            <button onclick="openPanicModal(this, true)" trigger_panic_alarm="true" type="button" style="
+                                background: linear-gradient(135deg, #c0392b, #e74c3c);
+                                border: none;
+                                border-radius: 10px;
+                                color: #fff;
+                                font-weight: 700;
+                                font-size: 1rem;
+                                letter-spacing: 0.1em;
+                                text-transform: uppercase;
+                                padding: 0.85rem;
+                                box-shadow: 0 4px 20px rgba(220,53,69,0.5);
+                                transition: box-shadow 0.2s;
+                            ">&#x1F6A8; Set Off The Alarm</button>
+
+                            <button onclick="toggleArmModal()" type="button" data-bs-dismiss="modal" style="
+                                background: rgba(255,255,255,0.06);
+                                border: 1px solid rgba(255,255,255,0.12);
+                                border-radius: 10px;
+                                color: #aaa;
+                                font-weight: 600;
+                                font-size: 0.9rem;
+                                letter-spacing: 0.05em;
+                                text-transform: uppercase;
+                                padding: 0.75rem;
+                                transition: background 0.2s;
+                            ">&#x2715; No, Go Back</button>
+                        </div>
+
                     </div>
-                    <div class="modal-body">
-                        <p>The <b class="text-uppercase fa-bold">Panic Alarm</b> is a serious feature on the NESS alarm panel and should only be used in emergencies involving serious harm or threat.</p>
-                    </div>
-                    <div class="modal-footer d-flex justify-content-between">
-                        <button onclick="openPanicModal(this, true)" trigger_panic_alarm="true" type="button" class="btn btn-danger text-uppercase">Set off the alarm</button>
-                        <button onclick="toggleArmModal()" type="button" class="btn btn-secondary text-uppercase" data-bs-dismiss="modal">NO, GO BACK</button>
-                    </div>
+
+                    <!-- pulsing red bottom bar -->
+                    <div style="
+                        height: 5px;
+                        background: linear-gradient(90deg, #ff0000, #ff4444, #ff0000);
+                        background-size: 200% 100%;
+                        animation: panic-bar 1.2s linear infinite reverse;
+                    "></div>
                 </div>
             </div>
         </div>
+
+        <style>
+            @keyframes panic-bar {
+                0%   { background-position: 0% 0%; }
+                100% { background-position: 200% 0%; }
+            }
+            @keyframes panic-pulse {
+                0%, 100% { box-shadow: 0 0 0 0 rgba(220,53,69,0.5); }
+                50%       { box-shadow: 0 0 0 12px rgba(220,53,69,0); }
+            }
+        </style>
 
      {% endif %}
 
