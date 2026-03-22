@@ -39,6 +39,20 @@ def broadcast_system_update(system_status):
     )
 
 
+def broadcast_user_input_ack(user_input_id):
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        PANEL_STATUS_GROUP,
+        {
+            'type': 'panel.update',
+            'payload': {
+                'type': 'user_input_ack',
+                'id': user_input_id,
+            },
+        }
+    )
+
+
 def record_alarm_event(event_type, zone=None, user=None, detail=''):
     """Create an AlarmEvent record and broadcast it to the history group."""
     from ness_comms.models import AlarmEvent

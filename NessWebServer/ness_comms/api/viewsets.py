@@ -17,7 +17,7 @@ from rest_framework_api_key.permissions import HasAPIKey
 from NessWebServer.api.viewsets import CsrfExemptSessionAuthentication
 from ness_comms.api.serializers import NessSystemStatusSerializer, ZoneSerializer, NessPacketSerializer, UserInputSerializer
 from ness_comms.models import UserInput, Zone, SystemStatus
-from ness_comms.broadcast import broadcast_zone_update, broadcast_system_update, record_alarm_event
+from ness_comms.broadcast import broadcast_zone_update, broadcast_system_update, broadcast_user_input_ack, record_alarm_event
 from ness_comms.models import AlarmEvent
 
 from django.db.models import Q
@@ -107,7 +107,8 @@ class NessSystemStatusViewSet(viewsets.ModelViewSet):
 
             # check if we received a valid command
             if len(cmds):
-                for cmd in cmds:
+                main_cmd_id = None
+                for i, cmd in enumerate(cmds):
                     event = UserInput.objects.get_or_create(
                         data=cmd,
                         type=CommandType.USER_INTERFACE,
@@ -119,7 +120,10 @@ class NessSystemStatusViewSet(viewsets.ModelViewSet):
                     event.type_id = CommandType.USER_INTERFACE.value
                     event.save()
 
-                return Response({"user_input_ack":True}, status=status.HTTP_201_CREATED)
+                    if i == 0:
+                        main_cmd_id = event.id
+
+                return Response({"user_input_ack": True, "pending_id": main_cmd_id}, status=status.HTTP_201_CREATED)
 
         # if nothing matches return bad request
         return Response(None, status=status.HTTP_400_BAD_REQUEST)
@@ -307,16 +311,24 @@ class UserInputViewSet(viewsets.ModelViewSet):
 
     http_method_names = ['get', 'post', 'patch']
 
+    def get_queryset(self):
+        queryset = UserInput.objects.all()
+        if self.request.query_params.get('pending'):
+            queryset = queryset.filter(
+                user_input_command=True,
+                input_command_received=False,
+            ).order_by('timestamp')
+        return queryset
+
     def create(self, request, *args, **kwargs):
 
         # Command from ESP32
         if request.data.get("ness2wifi_ack", False):
             try:
                 user_input = UserInput.objects.get(id=request.data.get("id", None))
-
-                # Save ack
                 user_input.input_command_received = True
                 user_input.save()
+                broadcast_user_input_ack(user_input.id)
 
             except UserInput.DoesNotExist:
                 pass

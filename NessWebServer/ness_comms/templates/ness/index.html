@@ -50,53 +50,62 @@
     <!-- Keypad Modal -->
     <div class="modal fade" id="armModal" tabindex="-1" aria-labelledby="armModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
+            <div class="modal-content kp-modal">
 
-                <div class="modal-header">
-                    <h5 class="modal-title text-uppercase" id="armModalLabel">User Keypad</h5>
+                <div class="kp-header">
+                    <div class="kp-header-left">
+                        <div class="kp-icon-wrap">&#x1F6E1;</div>
+                        <div>
+                            <div class="kp-title" id="armModalLabel">Security Panel</div>
+                            <div class="kp-subtitle">Alarm Control Interface</div>
+                        </div>
+                    </div>
+                    <button type="button" class="kp-close" data-bs-dismiss="modal" aria-label="Close">&#x2715;</button>
                 </div>
 
-                <div class="modal-body">
-                    <div class="d-grid gap-5 text-center pb-3">
+                <div class="kp-body">
 
-                        {% if user.enable_panic_mode %}
-                            <!-- Content visible only to superusers -->
-                            <button onclick="openPanicModal(this, false)" open_ack_modal="true" type="button" name="panic_button" id="panic" arming_cmd="P"
-                                    class="text-uppercase btn btn-danger btn-lg btn-block">
-                                <span class="spinner-border spinner-border-sm" name="arm_spinner" id="arm_home_spinner"
-                                      role="status" aria-hidden="true" hidden></span>
-                                PANIC
-                            </button>
+                    {% if user.enable_panic_mode %}
+                    <button onclick="openPanicModal(this, false)" open_ack_modal="true" type="button"
+                            name="panic_button" id="panic" arming_cmd="P" class="kp-btn kp-btn-panic">
+                        <span class="spinner-border spinner-border-sm kp-spinner" name="arm_spinner"
+                              id="arm_panic_spinner" role="status" aria-hidden="true" hidden></span>
+                        <span class="kp-btn-icon">&#x1F6A8;</span>
+                        <span class="kp-btn-label">PANIC</span>
+                        <span class="kp-btn-sub">Trigger emergency alarm</span>
+                    </button>
+                    <div class="kp-divider"><span>ARM OPTIONS</span></div>
+                    {% endif %}
 
-                            <hr class="my-4 border border-dark border-2 opacity-50">
-
-                        {% endif %}
-
+                    <div class="kp-grid">
                         <button onclick="arming(this, false)" type="button" name="arm_button" id="arm_away"
-                                arming_cmd="A" class="text-uppercase btn btn-danger btn-lg btn-block">
-                            <span class="spinner-border spinner-border-sm" name="arm_spinner" id="arm_away_spinner"
-                                  role="status" aria-hidden="true" hidden></span>
-                            Away
+                                arming_cmd="A" class="kp-btn kp-btn-away">
+                            <span class="spinner-border spinner-border-sm kp-spinner" name="arm_spinner"
+                                  id="arm_away_spinner" role="status" aria-hidden="true" hidden></span>
+                            <span class="kp-btn-icon">&#x1F3C3;</span>
+                            <span class="kp-btn-label">AWAY</span>
+                            <span class="kp-btn-sub">Full perimeter</span>
                         </button>
 
                         <button onclick="arming(this, false)" type="button" name="arm_button" id="arm_home"
-                                arming_cmd="H" class="text-uppercase btn btn-danger btn-lg btn-block">
-                            <span class="spinner-border spinner-border-sm" name="arm_spinner" id="arm_home_spinner"
-                                  role="status" aria-hidden="true" hidden></span>
-                            Home
-                        </button>
-
-                        <button onclick="arming(this, true)" type="button" name="disarm_button" id="disarm"
-                                arming_cmd="" class="text-uppercase btn btn-success btn-lg btn-block">
-                            <span class="spinner-border spinner-border-sm" name="arm_spinner" id="disarm_spinner"
-                                  role="status" aria-hidden="true" hidden></span>
-                            Disarm
+                                arming_cmd="H" class="kp-btn kp-btn-home">
+                            <span class="spinner-border spinner-border-sm kp-spinner" name="arm_spinner"
+                                  id="arm_home_spinner" role="status" aria-hidden="true" hidden></span>
+                            <span class="kp-btn-icon">&#x1F3E0;</span>
+                            <span class="kp-btn-label">HOME</span>
+                            <span class="kp-btn-sub">Perimeter only</span>
                         </button>
                     </div>
-                </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button onclick="arming(this, true)" type="button" name="disarm_button" id="disarm"
+                            arming_cmd="" class="kp-btn kp-btn-disarm">
+                        <span class="spinner-border spinner-border-sm kp-spinner" name="arm_spinner"
+                              id="disarm_spinner" role="status" aria-hidden="true" hidden></span>
+                        <span class="kp-btn-icon">&#x1F513;</span>
+                        <span class="kp-btn-label">DISARM</span>
+                        <span class="kp-btn-sub">Deactivate all zones</span>
+                    </button>
+
                 </div>
 
             </div>
@@ -220,7 +229,7 @@
 
     <script>
 
-        var isArming = false;
+        var pendingArmId = null;
 
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -263,16 +272,38 @@
                 // Request a fresh zone exclusion status from the NESS panel on connect
                 $.get("{% url 'api-system-status-list' %}", {'check_exclusions': true});
 
+                // Restore spinner state for any command still waiting for ESP ack
+                fetch("{% url 'api-ness_comms-user-inputs-list' %}?pending=true", {
+                    headers: {'Accept': 'application/json'}
+                })
+                .then(r => r.json())
+                .then(pending => {
+                    const main = pending.find(e => !e.data.startsWith('S'));
+                    if (!main) return;
+
+                    const d = main.data;
+                    let targetBtn =
+                        d.startsWith('A') ? document.getElementById('arm_away') :
+                        d.startsWith('H') ? document.getElementById('arm_home') :
+                        d.startsWith('P') ? document.getElementById('panic')    :
+                                            document.getElementById('disarm');
+
+                    if (!targetBtn) return;
+
+                    pendingArmId = main.id;
+                    targetBtn.firstElementChild.removeAttribute('hidden');
+                    targetBtn.disabled = true;
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('armModal')).show();
+                });
+
                 // Start heartbeat
                 schedulePing();
             };
 
             panelSocket.onmessage = function (e) {
                 const data = JSON.parse(e.data);
-                console.log('[WS] message received:', data.type, data);
 
                 if (data.type === 'pong') {
-                    // Server is alive — cancel the dead-connection timer and schedule next ping
                     clearTimeout(pongTimer);
                     pongTimer = null;
                     schedulePing();
@@ -283,6 +314,13 @@
                     applyZoneUpdate(data);
                 } else if (data.type === 'system_update') {
                     applySystemUpdate(data);
+                } else if (data.type === 'user_input_ack') {
+                    if (pendingArmId !== null && data.id === pendingArmId) {
+                        pendingArmId = null;
+                        document.querySelectorAll('[name="arm_spinner"]').forEach(s => s.setAttribute('hidden', ''));
+                        document.querySelectorAll('[name="arm_button"], [name="disarm_button"]').forEach(b => b.removeAttribute('disabled'));
+                        bootstrap.Modal.getInstance(document.getElementById('armModal'))?.hide();
+                    }
                 }
             };
 
@@ -333,13 +371,6 @@
             let disarm_btns = document.getElementsByName("disarm_button");
             let arming_state = document.getElementById("arming_state");
             let alarm_state = document.getElementById("alarm_state");
-
-            if (isArming) {
-                document.getElementById("disarm_spinner").setAttribute("hidden", "");
-            } else {
-                document.getElementById("arm_away_spinner").setAttribute("hidden", "");
-                document.getElementById("arm_home_spinner").setAttribute("hidden", "");
-            }
 
             if (e.is_armed_away) {
                 arming_state.innerHTML = "ARMED AWAY";
@@ -451,10 +482,9 @@
       {% endif %}
 
         function arming(e, disarm) {
-            isArming = !disarm;
-
             let spinner = e.firstElementChild;
             spinner.removeAttribute("hidden");
+            e.disabled = true;
 
             const armingCmd = e.getAttribute("arming_cmd");
 
@@ -470,20 +500,12 @@
             })
                 .then(response => response.json())
                 .then(response => {
-                    spinner.setAttribute("hidden", true);
-
-                    // Optimistic UI update — reflect the expected state immediately
-                    // without waiting for the ESP32 round-trip
                     if (response.user_input_ack) {
-                        const optimistic = disarm
-                            ? { is_disarmed: true,  is_armed_home: false, is_armed_away: false, alarm_siren_on: false, arming_delayed_active: false }
-                            : armingCmd === 'H'
-                                ? { is_armed_home: true, is_armed_away: false, is_disarmed: false, alarm_siren_on: false, arming_delayed_active: true }
-                                : { is_armed_away: true, is_armed_home: false, is_disarmed: false, alarm_siren_on: false, arming_delayed_active: true };
-                        applySystemUpdate(optimistic);
-
-                        // Close the keypad modal
-                        bootstrap.Modal.getInstance(document.getElementById('armModal'))?.hide();
+                        // Spinner and modal stay open — waiting for ESP ack via WebSocket
+                        pendingArmId = response.pending_id;
+                    } else {
+                        spinner.setAttribute("hidden", true);
+                        e.disabled = false;
                     }
                 });
         }

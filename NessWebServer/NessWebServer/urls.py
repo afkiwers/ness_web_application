@@ -22,12 +22,14 @@ from two_factor.urls import urlpatterns as tf_urls
 
 from NessWebServer import settings
 from NessWebServer.api.router import api_logout, main_router
+from users.views import locked_out
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path('', include(tf_urls)),
     path('user/', include('users.urls')),
     path('', include('ness_comms.urls')),
+    path('locked-out/', locked_out, name='locked-out'),
 
     path('api/', include(main_router.urls)),
     path('api/api-token-auth/', rest_views.obtain_auth_token, name='api-token-auth'),

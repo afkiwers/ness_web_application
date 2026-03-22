@@ -170,10 +170,15 @@ LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
 LOGIN_URL = 'two_factor:login'
 
+# Keep sessions alive until explicit logout (don't expire on browser close)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 days
+
+AXES_ENABLED = env.bool('AXES_ENABLED', default=True)
 AXES_FAILURE_LIMIT = 5
 AXES_RESET_ON_SUCCESS = True
 AXES_LOCKOUT_PARAMETERS = ["ip_address", ["username", "user_agent"]]
-AXES_LOCKOUT_URL = 'locked-out'
+AXES_LOCKOUT_URL = '/locked-out/'
 AXES_COOLOFF_TIME = 1
 
 AXES_IPWARE_META_PRECEDENCE_ORDER = [

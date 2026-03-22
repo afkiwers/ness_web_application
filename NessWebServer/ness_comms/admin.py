@@ -1,6 +1,6 @@
 from django.contrib import admin
 from ness_comms.models import Zone, UserInput, SystemStatus, AlarmEvent
-from ness_comms.broadcast import broadcast_zone_update, broadcast_system_update
+from ness_comms.broadcast import broadcast_zone_update, broadcast_system_update, broadcast_user_input_ack
 
 
 class ZoneDisplay(admin.ModelAdmin):
@@ -14,6 +14,11 @@ class ZoneDisplay(admin.ModelAdmin):
 class OutputEventDataDisplay(admin.ModelAdmin):
     list_display = [f.name for f in UserInput._meta.fields]
     list_per_page = 25
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if obj.input_command_received:
+            broadcast_user_input_ack(obj.id)
 
 
 class SystemStatusDisplay(admin.ModelAdmin):

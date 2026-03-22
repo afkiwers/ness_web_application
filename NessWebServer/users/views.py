@@ -1,3 +1,5 @@
 from django.shortcuts import render
 
-# Create your views here.
+
+def locked_out(request):
+    return render(request, 'users/locked_out.html', status=403)

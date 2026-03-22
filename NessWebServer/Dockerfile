@@ -31,7 +31,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy app code
 COPY . .
 
-# Normalize entrypoint (handle CRLF and permissions)
+# Normalise entrypoint (handle CRLF and permissions)
 RUN dos2unix ./entrypoint.sh && chmod +x ./entrypoint.sh
 
 # Set entrypoint
