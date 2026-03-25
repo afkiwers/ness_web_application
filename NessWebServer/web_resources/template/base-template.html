@@ -46,6 +46,20 @@
                         <a class="nav-link text-light" href="{% url 'alarm-history' %}">History</a>
                     </li>
 
+                    <li class="nav-item">
+                        <a class="nav-link text-light d-flex justify-content-between align-items-center"
+                           data-bs-toggle="collapse" href="#zoneHistoryCollapse" role="button"
+                           aria-expanded="false" aria-controls="zoneHistoryCollapse">
+                            Zone History
+                            <span class="small ms-2">&#x25BE;</span>
+                        </a>
+                        <div class="collapse" id="zoneHistoryCollapse">
+                            <ul id="zoneHistoryNavList" class="list-unstyled ps-3 mb-0">
+                                <li class="text-muted small py-1">Loading…</li>
+                            </ul>
+                        </div>
+                    </li>
+
                 {% if user.is_staff %}
 
                     <li class="nav-item">
@@ -261,6 +275,134 @@
     });
 
     resetIdle();
+})();
+</script>
+
+<!-- Zone History Modal -->
+<div class="modal fade" id="zoneHistoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="zoneHistoryTitle">Zone History</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width:160px">Time</th>
+                                <th>Event</th>
+                                <th>User</th>
+                            </tr>
+                        </thead>
+                        <tbody id="zoneHistoryBody">
+                            <tr><td colspan="3" class="text-center text-muted py-4">Loading…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .event-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: #6c757d;
+        color: #fff;
+    }
+    .event-ARMED_AWAY      { background: #dc3545; color: #fff; }
+    .event-ARMED_HOME      { background: #e67e22; color: #fff; }
+    .event-DISARMED        { background: #198754; color: #fff; }
+    .event-SIREN_ON        { background: #dc3545; color: #fff; }
+    .event-SIREN_OFF       { background: #198754; color: #fff; }
+    .event-PANIC_TRIGGERED { background: #000;    color: #f00; }
+    .event-ZONE_TRIGGERED  { background: #fd7e14; color: #000; }
+    .event-ZONE_SEALED     { background: #198754; color: #fff; }
+    .event-ZONE_EXCLUDED   { background: #0dcaf0; color: #000; }
+    .event-ZONE_INCLUDED   { background: #6610f2; color: #fff; }
+</style>
+
+<script>
+(function () {
+    const EVENT_BADGE_CLASSES = {
+        'ARMED_AWAY': 'event-ARMED_AWAY', 'ARMED_HOME': 'event-ARMED_HOME',
+        'DISARMED': 'event-DISARMED', 'SIREN_ON': 'event-SIREN_ON',
+        'SIREN_OFF': 'event-SIREN_OFF', 'PANIC_TRIGGERED': 'event-PANIC_TRIGGERED',
+        'ZONE_TRIGGERED': 'event-ZONE_TRIGGERED', 'ZONE_SEALED': 'event-ZONE_SEALED',
+        'ZONE_EXCLUDED': 'event-ZONE_EXCLUDED', 'ZONE_INCLUDED': 'event-ZONE_INCLUDED',
+    };
+
+    window.openZoneHistory = function(zoneId, zoneName) {
+        document.getElementById('zoneHistoryTitle').textContent = 'History \u2014 ' + zoneName;
+        const tbody = document.getElementById('zoneHistoryBody');
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">Loading\u2026</td></tr>';
+
+        const offcanvasEl = document.getElementById('offcanvasDarkNavbar');
+        const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
+        if (offcanvas) offcanvas.hide();
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('zoneHistoryModal')).show();
+
+        fetch('/zones/' + zoneId + '/history/', { headers: { 'Accept': 'application/json' } })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.events.length) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">No events recorded for this zone.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = data.events.map(function(e) {
+                    const d = new Date(e.timestamp);
+                    const ts = d.toLocaleDateString('en-AU', {day:'2-digit', month:'short', year:'numeric'})
+                             + ' ' + d.toLocaleTimeString('en-AU', {hour12: false});
+                    const badge = EVENT_BADGE_CLASSES[e.event_type] || '';
+                    const user = e.triggered_by
+                        ? '<span style="font-size:0.75rem;color:#adb5bd">' + e.triggered_by + '</span>'
+                        : '<span class="text-muted">Panel</span>';
+                    return '<tr>'
+                        + '<td class="text-muted" style="font-size:0.8rem;white-space:nowrap">' + ts + '</td>'
+                        + '<td><span class="event-badge ' + badge + '">' + e.event_type_display + '</span></td>'
+                        + '<td>' + user + '</td>'
+                        + '</tr>';
+                }).join('');
+            });
+    };
+
+    // Populate zone list when the collapse is first opened
+    let zonesLoaded = false;
+    const collapseEl = document.getElementById('zoneHistoryCollapse');
+    if (collapseEl) {
+        collapseEl.addEventListener('show.bs.collapse', function () {
+            if (zonesLoaded) return;
+            fetch('/api/ness_comms-zones/', { headers: { 'Accept': 'application/json' } })
+                .then(r => r.json())
+                .then(function(data) {
+                    zonesLoaded = true;
+                    const zones = (data.results || data).filter(function(z) { return !z.hidden; });
+                    const list = document.getElementById('zoneHistoryNavList');
+                    if (!zones.length) {
+                        list.innerHTML = '<li class="text-muted small py-1">No zones found.</li>';
+                        return;
+                    }
+                    list.innerHTML = zones.map(function(z) {
+                        const name = z.name || ('Zone ' + z.zone_id);
+                        const safeName = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                        return '<li><a href="#" class="nav-link text-light py-1 ps-0"'
+                            + ' onclick="openZoneHistory(' + z.zone_id + ', \'' + safeName + '\'); return false;">'
+                            + name + '</a></li>';
+                    }).join('');
+                })
+                .catch(function() {
+                    document.getElementById('zoneHistoryNavList').innerHTML =
+                        '<li class="text-danger small py-1">Failed to load zones.</li>';
+                });
+        });
+    }
 })();
 </script>
 

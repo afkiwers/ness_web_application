@@ -37,9 +37,6 @@
                 {{ zone }}
 
                 <span style="float:right;">
-                    <button class="badge rounded-pill text-bg-secondary mx-1 text-uppercase border-0"
-                            onclick="openZoneHistory({{ zone.zone_id }}, '{{ zone }}')">History
-                    </button>
                     <button class="badge rounded-pill text-bg-warning mx-1 text-uppercase border-0"
                             name="zone_exclude" zone_id={{ zone.zone_id }} zone_name="{{ zone }}"
                             id="zone_exclude_{{ zone.zone_id }}" onclick="openAckModal(this)">Exclude
@@ -624,70 +621,5 @@
 
     </script>
 
-
-    <!-- Zone History Modal -->
-    <div class="modal fade" id="zoneHistoryModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="zoneHistoryTitle">Zone History</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th style="width:160px">Time</th>
-                                    <th>Event</th>
-                                    <th>User</th>
-                                </tr>
-                            </thead>
-                            <tbody id="zoneHistoryBody">
-                                <tr><td colspan="3" class="text-center text-muted py-4">Loading…</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const EVENT_BADGE_CLASSES = {
-            'ARMED_AWAY': 'event-ARMED_AWAY', 'ARMED_HOME': 'event-ARMED_HOME',
-            'DISARMED': 'event-DISARMED', 'SIREN_ON': 'event-SIREN_ON',
-            'SIREN_OFF': 'event-SIREN_OFF', 'PANIC_TRIGGERED': 'event-PANIC_TRIGGERED',
-            'ZONE_TRIGGERED': 'event-ZONE_TRIGGERED', 'ZONE_SEALED': 'event-ZONE_SEALED',
-            'ZONE_EXCLUDED': 'event-ZONE_EXCLUDED', 'ZONE_INCLUDED': 'event-ZONE_INCLUDED',
-        };
-
-        function openZoneHistory(zoneId, zoneName) {
-            document.getElementById('zoneHistoryTitle').textContent = `History — ${zoneName}`;
-            const tbody = document.getElementById('zoneHistoryBody');
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">Loading…</td></tr>';
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('zoneHistoryModal')).show();
-
-            fetch(`/zones/${zoneId}/history/`, { headers: { 'Accept': 'application/json' } })
-                .then(r => r.json())
-                .then(data => {
-                    if (!data.events.length) {
-                        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">No events recorded for this zone.</td></tr>';
-                        return;
-                    }
-                    tbody.innerHTML = data.events.map(e => {
-                        const d = new Date(e.timestamp);
-                        const ts = d.toLocaleDateString('en-AU', {day:'2-digit',month:'short',year:'numeric'}) + ' ' + d.toLocaleTimeString('en-AU', {hour12:false});
-                        const badge = EVENT_BADGE_CLASSES[e.event_type] || '';
-                        const user = e.triggered_by ? `<span style="font-size:0.75rem;color:#adb5bd">${e.triggered_by}</span>` : '<span class="text-muted">Panel</span>';
-                        return `<tr>
-                            <td class="text-muted" style="font-size:0.8rem;white-space:nowrap">${ts}</td>
-                            <td><span class="event-badge ${badge}">${e.event_type_display}</span></td>
-                            <td>${user}</td>
-                        </tr>`;
-                    }).join('');
-                });
-        }
-    </script>
 
 {% endblock content %}
