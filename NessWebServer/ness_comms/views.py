@@ -255,6 +255,8 @@ def toggle_ota(request):
         return JsonResponse({'ok': False}, status=404)
     system_status.ness2wifi_ota_enabled = not system_status.ness2wifi_ota_enabled
     system_status.save()
+    from ness_comms.broadcast import broadcast_system_update
+    broadcast_system_update(system_status)
     return JsonResponse({'ok': True, 'ota_enabled': system_status.ness2wifi_ota_enabled})
 
 

@@ -35,6 +35,7 @@ def broadcast_system_update(system_status):
                 'alarm_siren_on': system_status.alarm_siren_on,
                 'arming_delayed_active': system_status.arming_delayed_active,
                 'esp_last_seen': system_status.last_updated_at.isoformat(),
+                'ota_enabled': system_status.ness2wifi_ota_enabled,
             },
         }
     )
