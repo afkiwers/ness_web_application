@@ -13,6 +13,11 @@
         <span>ESP offline — last seen <strong id="espLastSeenText"></strong> ago. Commands will not be processed.</span>
     </div>
 
+    <div id="otaBanner" class="alert alert-info d-flex align-items-center gap-2 mb-3" role="alert" hidden>
+        <span style="font-size:1.2rem">&#x1F4E1;</span>
+        <span>OTA updates are enabled — the ESP may reboot to apply firmware updates.</span>
+    </div>
+
     <div class="card mx-auto">
         <h5 class="card-header text-center">Available Zones</h5>
 
@@ -475,6 +480,15 @@
             if (e.esp_last_seen) {
                 lastEspSeen = e.esp_last_seen;
                 checkEspOffline();
+            }
+
+            if (e.ota_enabled !== undefined) {
+                const otaBanner = document.getElementById('otaBanner');
+                if (e.ota_enabled) {
+                    otaBanner.removeAttribute('hidden');
+                } else {
+                    otaBanner.setAttribute('hidden', '');
+                }
             }
             let arm_btns = document.getElementsByName("arm_button");
             let disarm_btns = document.getElementsByName("disarm_button");

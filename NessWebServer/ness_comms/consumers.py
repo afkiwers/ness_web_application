@@ -57,6 +57,7 @@ class PanelStatusConsumer(AsyncWebsocketConsumer):
                 'alarm_siren_on': s.alarm_siren_on,
                 'arming_delayed_active': s.arming_delayed_active,
                 'esp_last_seen': s.last_updated_at.isoformat(),
+                'ota_enabled': s.ness2wifi_ota_enabled,
             }
         except SystemStatus.DoesNotExist:
             return {}
