@@ -13,6 +13,7 @@ urlpatterns = [
     path('history/export/', views.history_export, name='history-export'),
     path('zones/<int:zone_id>/history/', views.zone_history_data, name='zone-history-data'),
     path('settings/ota/toggle/', views.toggle_ota, name='toggle-ota'),
+    path('settings/esp-banner/toggle/', views.toggle_esp_banner, name='toggle-esp-banner'),
     path('health/', views.health_check, name='health-check'),
     path('shortcuts/disarm/', views.shortcut_disarm, name='shortcut-disarm'),
 ]

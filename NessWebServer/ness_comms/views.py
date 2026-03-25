@@ -249,6 +249,19 @@ def zone_history_data(request, zone_id):
 
 @staff_member_required
 @require_POST
+def toggle_esp_banner(request):
+    system_status = SystemStatus.objects.first()
+    if not system_status:
+        return JsonResponse({'ok': False}, status=404)
+    system_status.esp_offline_banner_enabled = not system_status.esp_offline_banner_enabled
+    system_status.save()
+    from ness_comms.broadcast import broadcast_system_update
+    broadcast_system_update(system_status)
+    return JsonResponse({'ok': True, 'esp_offline_banner_enabled': system_status.esp_offline_banner_enabled})
+
+
+@staff_member_required
+@require_POST
 def toggle_ota(request):
     system_status = SystemStatus.objects.first()
     if not system_status:

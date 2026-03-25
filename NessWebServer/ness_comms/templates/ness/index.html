@@ -8,12 +8,12 @@
 
 {% block content %}
 
-    <div id="espOfflineBanner" class="alert alert-warning d-flex align-items-center gap-2 mb-3" role="alert" hidden>
+    <div id="espOfflineBanner" class="alert alert-warning d-flex align-items-center gap-2 mb-3 d-none" role="alert">
         <span style="font-size:1.2rem">&#x26A0;&#xFE0F;</span>
         <span>ESP offline — last seen <strong id="espLastSeenText"></strong> ago. Commands will not be processed.</span>
     </div>
 
-    <div id="otaBanner" class="alert alert-info d-flex align-items-center gap-2 mb-3" role="alert" hidden>
+    <div id="otaBanner" class="alert alert-info d-flex align-items-center gap-2 mb-3 d-none" role="alert">
         <span style="font-size:1.2rem">&#x1F4E1;</span>
         <span>OTA updates are enabled — the ESP may reboot to apply firmware updates.</span>
     </div>
@@ -319,30 +319,6 @@
     <script>
 
         var pendingArmId = null;
-        var lastEspSeen  = null;
-        const ESP_OFFLINE_MINS = 5;
-
-        function checkEspOffline() {
-            if (!lastEspSeen) return;
-            const banner = document.getElementById('espOfflineBanner');
-            if (localStorage.getItem('espOfflineBannerEnabled') !== 'true') {
-                banner.setAttribute('hidden', '');
-                return;
-            }
-            const diffMins = (Date.now() - new Date(lastEspSeen).getTime()) / 60000;
-            const label    = document.getElementById('espLastSeenText');
-            if (diffMins > ESP_OFFLINE_MINS) {
-                const m = Math.floor(diffMins);
-                label.textContent = m < 60 ? `${m}m` : `${Math.floor(m/60)}h ${m%60}m`;
-                banner.removeAttribute('hidden');
-            } else {
-                banner.setAttribute('hidden', '');
-            }
-        }
-        setInterval(checkEspOffline, 60000);
-        window.addEventListener('storage', function(e) {
-            if (e.key === 'espOfflineBannerEnabled') checkEspOffline();
-        });
 
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -480,18 +456,11 @@
         }
 
         function applySystemUpdate(e) {
-            if (e.esp_last_seen) {
-                lastEspSeen = e.esp_last_seen;
-                checkEspOffline();
-            }
-
             if (e.ota_enabled !== undefined) {
-                const otaBanner = document.getElementById('otaBanner');
-                if (e.ota_enabled) {
-                    otaBanner.removeAttribute('hidden');
-                } else {
-                    otaBanner.setAttribute('hidden', '');
-                }
+                document.getElementById('otaBanner').classList.toggle('d-none', !e.ota_enabled);
+            }
+            if (e.esp_offline_banner_enabled !== undefined) {
+                document.getElementById('espOfflineBanner').classList.toggle('d-none', !e.esp_offline_banner_enabled);
             }
             let arm_btns = document.getElementsByName("arm_button");
             let disarm_btns = document.getElementsByName("disarm_button");
