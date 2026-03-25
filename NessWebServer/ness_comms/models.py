@@ -113,7 +113,7 @@ class SystemStatus(models.Model):
 
     alarm_siren_on = models.BooleanField(default=False)
 
-    last_updated_at = models.DateTimeField(auto_now=True)  # Updates on every save
+    status_last_requested = models.DateTimeField("ESP Status Last Requested", null=True, blank=True)
 
     def __str__(self):
         return f'SystemStatus ({self.id})'

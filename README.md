@@ -137,7 +137,7 @@ You can now run it from the Shortcuts app, the home screen widget, or by saying 
 | Setting | Description |
 |---|---|
 | **ESP OTA Updates** | Allows the Ness2Wifi bridge to receive over-the-air firmware updates |
-| **ESP Offline Banner** | Shows a warning banner on the dashboard if the ESP hasn't checked in for more than 5 minutes. Stored per-device in `localStorage` — off by default |
+| **ESP Offline Banner** | Shows a warning banner on the dashboard if the ESP hasn't checked in for more than 5 minutes. Stored in the database — off by default |
 
 ---
 

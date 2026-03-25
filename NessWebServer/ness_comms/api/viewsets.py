@@ -162,9 +162,10 @@ class NessCommsRawDataViewSet(viewsets.ViewSet):
             # Get the current state of the NESS PCB
             ness_status = SystemStatus.objects.get_or_create(id=1)[0]
 
-            # save IP
+            # save IP and mark the time the ESP requested data
             ness_status.ness2wifi_ip = ness_pcb_ip
             ness_status.ness2wifi_fw_version = fw
+            ness_status.status_last_requested = datetime.datetime.now(tz=datetime.timezone.utc)
 
             ness_status.save()
 

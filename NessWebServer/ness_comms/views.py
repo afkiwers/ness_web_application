@@ -161,7 +161,7 @@ def health_check(request):
     esp_last_seen = None
     try:
         s = SystemStatus.objects.first()
-        esp_last_seen = s.last_updated_at.isoformat() if s else None
+        esp_last_seen = s.status_last_requested.isoformat() if s and s.status_last_requested else None
     except Exception:
         db_ok = False
 

@@ -56,7 +56,7 @@ class PanelStatusConsumer(AsyncWebsocketConsumer):
                 'is_disarmed': s.is_disarmed,
                 'alarm_siren_on': s.alarm_siren_on,
                 'arming_delayed_active': s.arming_delayed_active,
-                'esp_last_seen': s.last_updated_at.isoformat(),
+                'esp_last_seen': s.status_last_requested.isoformat() if s.status_last_requested else None,
                 'ota_enabled': s.ness2wifi_ota_enabled,
                 'esp_offline_banner_enabled': s.esp_offline_banner_enabled,
             }
