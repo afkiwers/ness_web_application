@@ -10,6 +10,8 @@ A self-hosted web application that bridges the **[Ness2Wifi PCB](https://github.
 - Arm Away, Arm Home, and Disarm from any browser
 - Optional Panic mode (per-user permission, requires confirmation)
 - Zone exclusion management
+- Per-zone event history and full system event history
+- Zone settings — rename zones, hide zones from the dashboard
 - Multi-user support with two-factor authentication (TOTP)
 - Brute-force lockout (django-axes) with configurable limits
 - REST API with token and API key authentication
@@ -91,8 +93,33 @@ The history page (`/history/`) shows the last 100 alarm events in a live-updatin
 
 ### Zone History
 
-Per-zone event history is accessible from the navigation menu under **Zone History**. Expanding the menu item fetches the zone list and shows each zone as a link. Selecting a zone opens a modal showing the last 50 events recorded for that zone — no separate page navigation required.
+The Zone History page (`/history/zones/`) is accessible from the navigation menu. It lists all visible zones in a table — clicking **View** on any row opens a modal showing the last 50 events recorded for that zone.
 
+---
+
+## Settings
+
+The Settings page (`/settings/`) is accessible to **staff users** from the navigation menu.
+
+### Zone Management
+
+| Column | Description |
+|---|---|
+| **ID** | The zone number as reported by the NESS panel |
+| **Name** | Click the name to rename it inline — saved immediately via API |
+| **Hidden** | Whether the zone is hidden from the main dashboard |
+| **Status** | Current zone state (Sealed, Open, Excluded, Unknown) |
+
+### Siri Shortcut
+
+Generates a per-user token for use with the Siri Shortcut disarm endpoint (`/shortcuts/disarm/`). The token is shown only once and can be regenerated at any time, which immediately invalidates the old one.
+
+### System Settings
+
+| Setting | Description |
+|---|---|
+| **ESP OTA Updates** | Allows the Ness2Wifi bridge to receive over-the-air firmware updates |
+| **ESP Offline Banner** | Shows a warning banner on the dashboard if the ESP hasn't checked in for more than 5 minutes. Stored per-device in `localStorage` — off by default |
 
 ---
 

@@ -47,17 +47,7 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link text-light d-flex justify-content-between align-items-center"
-                           data-bs-toggle="collapse" href="#zoneHistoryCollapse" role="button"
-                           aria-expanded="false" aria-controls="zoneHistoryCollapse">
-                            Zone History
-                            <span class="small ms-2">&#x25BE;</span>
-                        </a>
-                        <div class="collapse" id="zoneHistoryCollapse">
-                            <ul id="zoneHistoryNavList" class="list-unstyled ps-3 mb-0">
-                                <li class="text-muted small py-1">Loading…</li>
-                            </ul>
-                        </div>
+                        <a class="nav-link text-light" href="{% url 'zone-history' %}">Zone History</a>
                     </li>
 
                 {% if user.is_staff %}
@@ -373,36 +363,7 @@
             });
     };
 
-    // Populate zone list when the collapse is first opened
-    let zonesLoaded = false;
-    const collapseEl = document.getElementById('zoneHistoryCollapse');
-    if (collapseEl) {
-        collapseEl.addEventListener('show.bs.collapse', function () {
-            if (zonesLoaded) return;
-            fetch('/api/ness_comms-zones/', { headers: { 'Accept': 'application/json' } })
-                .then(r => r.json())
-                .then(function(data) {
-                    zonesLoaded = true;
-                    const zones = (data.results || data).filter(function(z) { return !z.hidden; });
-                    const list = document.getElementById('zoneHistoryNavList');
-                    if (!zones.length) {
-                        list.innerHTML = '<li class="text-muted small py-1">No zones found.</li>';
-                        return;
-                    }
-                    list.innerHTML = zones.map(function(z) {
-                        const name = z.name || ('Zone ' + z.zone_id);
-                        const safeName = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-                        return '<li><a href="#" class="nav-link text-light py-1 ps-0"'
-                            + ' onclick="openZoneHistory(' + z.zone_id + ', \'' + safeName + '\'); return false;">'
-                            + name + '</a></li>';
-                    }).join('');
-                })
-                .catch(function() {
-                    document.getElementById('zoneHistoryNavList').innerHTML =
-                        '<li class="text-danger small py-1">Failed to load zones.</li>';
-                });
-        });
-    }
+
 })();
 </script>
 

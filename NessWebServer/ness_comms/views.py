@@ -32,6 +32,12 @@ def history(request):
     return render(request, 'ness/history.html', {'events': events})
 
 
+@login_required
+def zone_history(request):
+    zones = Zone.objects.filter(hidden=False).order_by('zone_id')
+    return render(request, 'ness/zone_history.html', {'zones': zones})
+
+
 @staff_member_required
 def zone_settings(request):
     zones = Zone.objects.all().order_by('zone_id')

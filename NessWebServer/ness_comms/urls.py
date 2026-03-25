@@ -4,6 +4,7 @@ from ness_comms import views
 urlpatterns = [
     path('', views.home, name='home'),
     path('history/', views.history, name='alarm-history'),
+    path('history/zones/', views.zone_history, name='zone-history'),
     path('settings/', views.zone_settings, name='zone-settings'),
     path('settings/zones/<int:zone_id>/rename/', views.zone_rename, name='zone-rename'),
     path('statistics/', views.statistics, name='statistics'),
