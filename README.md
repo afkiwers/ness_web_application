@@ -112,7 +112,25 @@ The Settings page (`/settings/`) is accessible to **staff users** from the navig
 
 ### Siri Shortcut
 
-Generates a per-user token for use with the Siri Shortcut disarm endpoint (`/shortcuts/disarm/`). The token is shown only once and can be regenerated at any time, which immediately invalidates the old one.
+The Settings page generates a per-user token for authenticating the Siri Shortcut disarm endpoint (`/shortcuts/disarm/`). The token is shown only once and can be regenerated at any time, which immediately invalidates the old one.
+
+#### Setting up the Shortcut on iPhone / iPad
+
+1. Open the **Shortcuts** app and tap **+** to create a new shortcut
+2. Tap **Add Action**, search for **Get Contents of URL**, and select it
+3. Set the URL to the value shown on the Settings page (e.g. `https://yourhost/shortcuts/disarm/`)
+4. Tap **Show More** and set:
+   - **Method** → `POST`
+   - Under **Headers**, tap **Add new header**:
+     - **Key**: `Authorization`
+     - **Value**: `Token <paste your token here>`
+5. Optionally add a second action — **Get Dictionary Value** → key `message` — to show the response as a notification
+6. Tap the shortcut name at the top to rename it (e.g. *Disarm Alarm*)
+7. Tap **Done**
+
+You can now run it from the Shortcuts app, the home screen widget, or by saying **"Hey Siri, Disarm Alarm"**.
+
+> **Note:** The shortcut endpoint uses HTTP Basic Auth with your username and password — the token shown in Settings is used as the password. If you regenerate the token, update the shortcut header value to match.
 
 ### System Settings
 

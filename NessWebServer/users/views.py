@@ -29,6 +29,14 @@ def generate_shortcut_token(request):
 
 @login_required
 @require_POST
+def revoke_shortcut_token(request):
+    request.user.shortcut_token = ''
+    request.user.save(update_fields=['shortcut_token'])
+    return JsonResponse({'ok': True})
+
+
+@login_required
+@require_POST
 def generate_backup_codes(request):
     from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
     device, _ = StaticDevice.objects.get_or_create(user=request.user, name='backup')

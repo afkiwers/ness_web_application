@@ -96,9 +96,15 @@
             Shortcut URL: <code>{{ request.scheme }}://{{ request.get_host }}/shortcuts/disarm/</code><br>
             Header: <code>Authorization: Token &lt;your-token&gt;</code>
         </small>
-        <button class="btn btn-outline-warning btn-sm" id="generateTokenBtn">
-            {% if request.user.shortcut_token %}Regenerate Token{% else %}Generate Token{% endif %}
-        </button>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-warning btn-sm" id="generateTokenBtn">
+                {% if request.user.shortcut_token %}Regenerate Token{% else %}Generate Token{% endif %}
+            </button>
+            <button class="btn btn-outline-danger btn-sm" id="revokeTokenBtn"
+                    {% if not request.user.shortcut_token %}hidden{% endif %}>
+                Revoke Token
+            </button>
+        </div>
     </div>
 </div>
 
@@ -174,6 +180,24 @@
         copyBtn.disabled = false;
         generateTokenBtn.textContent = 'Regenerate Token';
         generateTokenBtn.disabled = false;
+        document.getElementById('revokeTokenBtn').removeAttribute('hidden');
+    });
+
+    const revokeTokenBtn = document.getElementById('revokeTokenBtn');
+    revokeTokenBtn.addEventListener('click', async () => {
+        if (!confirm('This will permanently revoke the token. Any Siri Shortcuts using it will stop working. Continue?')) return;
+        revokeTokenBtn.disabled = true;
+        await fetch('{% url "revoke-shortcut-token" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        });
+        tokenField.value = '';
+        tokenField.type = 'password';
+        toggleVisBtn.textContent = 'Show';
+        copyBtn.disabled = true;
+        generateTokenBtn.textContent = 'Generate Token';
+        revokeTokenBtn.setAttribute('hidden', '');
+        revokeTokenBtn.disabled = false;
     });
 
     // ESP offline banner toggle (localStorage)
