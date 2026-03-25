@@ -7,6 +7,7 @@ from django.db.models import Count
 from django.db.models.functions import TruncDate, ExtractHour, ExtractWeekDay
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from rest_framework.utils import json
 
@@ -261,3 +262,48 @@ def zone_rename(request, zone_id):
         zone.save()
         return JsonResponse({'ok': True, 'name': zone.name})
     return JsonResponse({'ok': False, 'error': 'Name cannot be empty'}, status=400)
+
+
+@csrf_exempt
+def shortcut_disarm(request):
+    """Siri Shortcuts endpoint — POST with Authorization: Token <shortcut_token>, no body required."""
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'POST required'}, status=405)
+
+    auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+    if not auth_header.startswith('Token '):
+        return JsonResponse({'ok': False, 'error': 'Unauthorized'}, status=401)
+
+    token = auth_header[6:].strip()
+    if not token:
+        return JsonResponse({'ok': False, 'error': 'Unauthorized'}, status=401)
+
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    try:
+        user = User.objects.get(shortcut_token=token, is_active=True)
+    except User.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Unauthorized'}, status=401)
+
+    if not getattr(user, 'panel_code', None):
+        return JsonResponse({'ok': False, 'error': 'No panel code configured for this user'}, status=403)
+
+    from nessclient.packet import CommandType
+    from ness_comms.models import UserInput
+    from ness_comms.broadcast import record_alarm_event
+    import zoneinfo
+
+    cmd = f'{user.panel_code}E'
+    event, _ = UserInput.objects.get_or_create(
+        data=cmd,
+        type=CommandType.USER_INTERFACE,
+        user_input_command=True,
+    )
+    event.timestamp = datetime.datetime.now().astimezone(tz=zoneinfo.ZoneInfo("Australia/Hobart"))
+    event.input_command_received = False
+    event.type_id = CommandType.USER_INTERFACE.value
+    event.save()
+
+    record_alarm_event(AlarmEvent.EventType.DISARMED, user=user)
+
+    return JsonResponse({'ok': True, 'message': 'Disarm command queued'})

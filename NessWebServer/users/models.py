@@ -12,3 +12,11 @@ class CustomUser(AbstractUser):
     panel_code = models.CharField("Ness Panel User Code", max_length=4, default='0000')
 
     enable_panic_mode = models.BooleanField(default=False)
+
+    shortcut_token = models.CharField(
+        "Siri Shortcut Token",
+        max_length=64,
+        blank=True,
+        default='',
+        help_text="Long-lived token for Siri Shortcuts. Regenerate to revoke access.",
+    )

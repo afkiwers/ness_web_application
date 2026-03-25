@@ -5,6 +5,7 @@ from users import views
 urlpatterns = [
     path('backup-codes/', views.backup_codes, name='backup-codes'),
     path('backup-codes/generate/', views.generate_backup_codes, name='generate-backup-codes'),
+    path('shortcut-token/generate/', views.generate_shortcut_token, name='generate-shortcut-token'),
 
     path('logout/', auth_views.LogoutView.as_view(template_name='users/logout.html'), name='logout'),
 

@@ -74,6 +74,34 @@
     </div>
 </div>
 
+<!-- Siri Shortcut Token -->
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <h5 class="mb-0">Siri Shortcut</h5>
+</div>
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="fw-semibold mb-1">Shortcut Token</div>
+        <small class="text-muted d-block mb-3">
+            Use this token in your Siri Shortcut instead of your password.
+            Regenerating it immediately revokes the old one.
+        </small>
+        <div class="input-group mb-2">
+            <input type="password" class="form-control form-control-sm font-monospace" id="shortcutTokenField"
+                   value="{{ request.user.shortcut_token|default:'' }}"
+                   placeholder="No token yet — generate one below" readonly>
+            <button class="btn btn-outline-secondary btn-sm" type="button" id="toggleTokenVisibility">Show</button>
+            <button class="btn btn-outline-secondary btn-sm" type="button" id="copyTokenBtn" {% if not request.user.shortcut_token %}disabled{% endif %}>Copy</button>
+        </div>
+        <small class="text-muted d-block mb-3">
+            Shortcut URL: <code>{{ request.scheme }}://{{ request.get_host }}/shortcuts/disarm/</code><br>
+            Header: <code>Authorization: Token &lt;your-token&gt;</code>
+        </small>
+        <button class="btn btn-outline-warning btn-sm" id="generateTokenBtn">
+            {% if request.user.shortcut_token %}Regenerate Token{% else %}Generate Token{% endif %}
+        </button>
+    </div>
+</div>
+
 <!-- System Settings -->
 <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
     <h5 class="mb-0">System Settings</h5>
@@ -112,6 +140,41 @@
 
 <script>
     const csrfToken = '{{ csrf_token }}';
+
+    // Siri shortcut token
+    const tokenField      = document.getElementById('shortcutTokenField');
+    const toggleVisBtn    = document.getElementById('toggleTokenVisibility');
+    const copyBtn         = document.getElementById('copyTokenBtn');
+    const generateTokenBtn = document.getElementById('generateTokenBtn');
+
+    toggleVisBtn.addEventListener('click', () => {
+        const hidden = tokenField.type === 'password';
+        tokenField.type = hidden ? 'text' : 'password';
+        toggleVisBtn.textContent = hidden ? 'Hide' : 'Show';
+    });
+
+    copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(tokenField.value).then(() => {
+            copyBtn.textContent = 'Copied!';
+            setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+        });
+    });
+
+    generateTokenBtn.addEventListener('click', async () => {
+        if (tokenField.value && !confirm('This will invalidate the current token. Any existing Siri Shortcuts will stop working until updated. Continue?')) return;
+        generateTokenBtn.disabled = true;
+        const resp = await fetch('{% url "generate-shortcut-token" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        });
+        const data = await resp.json();
+        tokenField.value = data.token;
+        tokenField.type = 'text';
+        toggleVisBtn.textContent = 'Hide';
+        copyBtn.disabled = false;
+        generateTokenBtn.textContent = 'Regenerate Token';
+        generateTokenBtn.disabled = false;
+    });
 
     // ESP offline banner toggle (localStorage)
     const espBannerToggle = document.getElementById('espOfflineBannerToggle');
