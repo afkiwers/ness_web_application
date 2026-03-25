@@ -34,6 +34,13 @@ class NessSystemStatusViewSet(viewsets.ModelViewSet):
 
     http_method_names = ['get', 'post', 'patch']
 
+    def list(self, request, *args, **kwargs):
+        # Update status_last_requested each time the ESP polls this endpoint
+        ness_status = SystemStatus.objects.get_or_create(id=1)[0]
+        ness_status.status_last_requested = datetime.datetime.now(tz=datetime.timezone.utc)
+        ness_status.save(update_fields=['status_last_requested'])
+        return super().list(request, *args, **kwargs)
+
     def get_queryset(self):
         queryset = SystemStatus.objects.all()
 
