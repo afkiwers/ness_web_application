@@ -37,7 +37,7 @@ ESP32 ────────HTTP────────┘                   
 
 ## Web Interface
 
-The main dashboard displays all zones and the current system state. It updates in real time as the panel reports changes.
+The main dashboard displays all zones and the current system state. It updates in real time as the panel reports changes. The interface is intentionally minimal — zone controls are limited to exclusion management directly from each zone row.
 
 ![Web Interface](images/web_interface.png)
 
@@ -88,6 +88,10 @@ The history page (`/history/`) shows the last 100 alarm events in a live-updatin
 | Zone Excluded / Included | Teal / Purple |
 
 ![Web User Keypad - Panic ACK](images/web_interface_history.png)
+
+### Zone History
+
+Per-zone event history is accessible from the navigation menu under **Zone History**. Expanding the menu item fetches the zone list and shows each zone as a link. Selecting a zone opens a modal showing the last 50 events recorded for that zone — no separate page navigation required.
 
 
 ---
