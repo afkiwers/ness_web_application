@@ -1,3 +1,5 @@
+import secrets
+
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
@@ -14,6 +16,15 @@ def backup_codes(request):
     device, _ = StaticDevice.objects.get_or_create(user=request.user, name='backup')
     codes = list(device.token_set.values_list('token', flat=True))
     return JsonResponse({'codes': codes, 'count': len(codes)})
+
+
+@login_required
+@require_POST
+def generate_shortcut_token(request):
+    token = secrets.token_urlsafe(40)
+    request.user.shortcut_token = token
+    request.user.save(update_fields=['shortcut_token'])
+    return JsonResponse({'token': token})
 
 
 @login_required
