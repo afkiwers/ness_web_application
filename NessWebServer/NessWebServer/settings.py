@@ -188,3 +188,17 @@ AXES_IPWARE_META_PRECEDENCE_ORDER = [
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
+# ── Notifications ─────────────────────────────────────────────────────────────
+# ntfy.sh (or self-hosted ntfy) push notifications
+NTFY_SERVER = env('NTFY_SERVER', default='')   # e.g. https://ntfy.sh
+NTFY_TOPIC  = env('NTFY_TOPIC',  default='')   # e.g. my-ness-alerts
+
+# Email notifications
+EMAIL_HOST          = env('EMAIL_HOST',          default='')
+EMAIL_PORT          = env.int('EMAIL_PORT',      default=587)
+EMAIL_HOST_USER     = env('EMAIL_HOST_USER',     default='')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+EMAIL_USE_TLS       = env.bool('EMAIL_USE_TLS',  default=True)
+DEFAULT_FROM_EMAIL  = env('DEFAULT_FROM_EMAIL',  default='ness@example.com')
+NOTIFICATION_EMAIL  = env('NOTIFICATION_EMAIL',  default='')  # recipient address
+

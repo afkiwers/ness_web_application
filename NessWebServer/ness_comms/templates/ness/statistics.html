@@ -1,0 +1,304 @@
+{% extends "base-template.html" %}
+{% load static %}
+
+{% block header %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+    .stat-card .fs-2 { line-height: 1.1; }
+    .range-btn.active { background: #0d6efd; border-color: #0d6efd; color: #fff; }
+    canvas { max-height: 260px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h5 class="mb-0">Statistics</h5>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+        <div class="btn-group btn-group-sm" id="rangeSelector">
+            <button class="btn btn-outline-secondary range-btn" data-range="day">Day</button>
+            <button class="btn btn-outline-secondary range-btn active" data-range="week">Week</button>
+            <button class="btn btn-outline-secondary range-btn" data-range="fortnight">Fortnight</button>
+            <button class="btn btn-outline-secondary range-btn" data-range="month">Month</button>
+            <button class="btn btn-outline-secondary range-btn" data-range="year">Year</button>
+            <button class="btn btn-outline-secondary range-btn" data-range="all">All Time</button>
+        </div>
+        <button class="btn btn-sm btn-outline-primary" id="refreshBtn">&#x21bb; Refresh</button>
+        <a class="btn btn-sm btn-outline-secondary" id="exportBtn" href="{% url 'statistics-export' %}?range=week">&#x2B07; Export CSV</a>
+    </div>
+</div>
+
+<!-- Summary cards -->
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md">
+        <div class="card text-center stat-card h-100">
+            <div class="card-body py-3">
+                <div class="fs-2 fw-bold" id="statTotal">—</div>
+                <small class="text-muted">Total Events</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md">
+        <div class="card text-center stat-card h-100">
+            <div class="card-body py-3">
+                <div class="fs-2 fw-bold text-warning" id="statTriggers">—</div>
+                <small class="text-muted">Zone Triggers</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md">
+        <div class="card text-center stat-card h-100">
+            <div class="card-body py-3">
+                <div class="fs-2 fw-bold text-danger" id="statSirens">—</div>
+                <small class="text-muted">Siren Activations</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md">
+        <div class="card text-center stat-card h-100">
+            <div class="card-body py-3">
+                <div class="fs-2 fw-bold text-danger" id="statPanic">—</div>
+                <small class="text-muted">Panic Events</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md">
+        <div class="card text-center stat-card h-100">
+            <div class="card-body py-3">
+                <div class="fs-2 fw-bold text-info" id="statAvgArm">—</div>
+                <small class="text-muted">Avg Armed Duration</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 1: Zone triggers + Arming doughnut -->
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-8">
+        <div class="card h-100">
+            <div class="card-header">Zone Activity</div>
+            <div class="card-body">
+                <canvas id="chartZones"></canvas>
+                <p class="text-center text-muted mt-3 mb-0 d-none" id="emptyZones">No zone triggers in this period.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-4">
+        <div class="card h-100">
+            <div class="card-header">Arming Behaviour</div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <canvas id="chartArming"></canvas>
+                <p class="text-center text-muted d-none" id="emptyArming">No arming events in this period.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 2: Hour + Day of week -->
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">Triggers by Hour <small class="text-muted">(UTC)</small></div>
+            <div class="card-body"><canvas id="chartHour"></canvas></div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">Triggers by Day of Week</div>
+            <div class="card-body"><canvas id="chartDow"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 3: Timeline + Zone exclusions -->
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-8">
+        <div class="card h-100">
+            <div class="card-header">Event Timeline</div>
+            <div class="card-body">
+                <canvas id="chartTimeline"></canvas>
+                <p class="text-center text-muted mt-3 mb-0 d-none" id="emptyTimeline">No events in this period.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-4">
+        <div class="card h-100">
+            <div class="card-header">Zone Exclusions</div>
+            <div class="card-body">
+                <canvas id="chartExclusions"></canvas>
+                <p class="text-center text-muted mt-3 mb-0 d-none" id="emptyExclusions">No exclusions in this period.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 4: User activity -->
+<div class="row g-3 mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">User Activity</div>
+            <div class="card-body">
+                <canvas id="chartUsers"></canvas>
+                <p class="text-center text-muted mt-3 mb-0 d-none" id="emptyUsers">No user activity in this period.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const DATA_URL   = "{% url 'statistics-data' %}";
+    const EXPORT_URL = "{% url 'statistics-export' %}";
+
+    Chart.defaults.color = '#adb5bd';
+    Chart.defaults.borderColor = 'rgba(255,255,255,0.08)';
+
+    const C = {
+        orange: '#fd7e14', red: '#dc3545', green: '#198754',
+        teal:   '#0dcaf0', purple: '#6610f2', blue: '#0d6efd', gray: '#6c757d',
+    };
+
+    function makeChart(id, type, data, options = {}) {
+        return new Chart(document.getElementById(id).getContext('2d'), {
+            type, data, options: { responsive: true, ...options }
+        });
+    }
+
+    const chartZones = makeChart('chartZones', 'bar', { labels: [], datasets: [] }, {
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } },
+    });
+
+    const chartArming = makeChart('chartArming', 'doughnut', {
+        labels: ['Armed Away', 'Armed Home', 'Disarmed'],
+        datasets: [{ data: [0,0,0], backgroundColor: [C.red, C.orange, C.green], borderWidth: 2 }]
+    }, { plugins: { legend: { position: 'bottom' } }, cutout: '60%' });
+
+    const chartHour = makeChart('chartHour', 'bar', {
+        labels: Array.from({length:24}, (_,i) => `${String(i).padStart(2,'0')}:00`),
+        datasets: [{ label: 'Triggers', data: Array(24).fill(0), backgroundColor: C.teal, borderRadius: 3 }]
+    }, { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } });
+
+    const chartDow = makeChart('chartDow', 'bar', {
+        labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+        datasets: [{ label: 'Triggers', data: Array(7).fill(0), backgroundColor: C.purple, borderRadius: 3 }]
+    }, { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } });
+
+    const chartTimeline = makeChart('chartTimeline', 'line', { labels: [], datasets: [] }, {
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+        elements: { point: { radius: 3 } },
+    });
+
+    const chartExclusions = makeChart('chartExclusions', 'bar', { labels: [], datasets: [] }, {
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } },
+    });
+
+    const chartUsers = makeChart('chartUsers', 'bar', { labels: [], datasets: [] }, {
+        plugins: { legend: { position: 'top' } },
+        scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } },
+    });
+
+    function update(chart, labels, datasets) {
+        chart.data.labels = labels;
+        chart.data.datasets = datasets;
+        chart.update();
+    }
+
+    function fmtDuration(mins) {
+        if (mins === 0) return '—';
+        if (mins < 60) return `${mins}m`;
+        const h = Math.floor(mins / 60), m = mins % 60;
+        return m ? `${h}h ${m}m` : `${h}h`;
+    }
+
+    function loadData(range) {
+        document.getElementById('exportBtn').href = `${EXPORT_URL}?range=${range}`;
+        fetch(`${DATA_URL}?range=${range}`)
+            .then(r => r.json())
+            .then(d => {
+                document.getElementById('statTotal').textContent    = d.total;
+                document.getElementById('statTriggers').textContent = d.zone_triggers.reduce((s,z) => s+z.count, 0);
+                document.getElementById('statSirens').textContent   = d.siren_panic.SIREN_ON || 0;
+                document.getElementById('statPanic').textContent    = d.siren_panic.PANIC_TRIGGERED || 0;
+                document.getElementById('statAvgArm').textContent   = fmtDuration(d.avg_armed_mins);
+
+                // Zone triggers
+                const hasZ = d.zone_triggers.length > 0;
+                document.getElementById('emptyZones').classList.toggle('d-none', hasZ);
+                document.getElementById('chartZones').classList.toggle('d-none', !hasZ);
+                update(chartZones,
+                    d.zone_triggers.map(z => z.zone__name || `Zone ${z.zone__zone_id}`),
+                    [{ data: d.zone_triggers.map(z => z.count), backgroundColor: C.orange, borderRadius: 3 }]
+                );
+
+                // Arming doughnut
+                const armTotal = d.arming_counts.ARMED_AWAY + d.arming_counts.ARMED_HOME + d.arming_counts.DISARMED;
+                document.getElementById('emptyArming').classList.toggle('d-none', armTotal > 0);
+                document.getElementById('chartArming').classList.toggle('d-none', armTotal === 0);
+                chartArming.data.datasets[0].data = [d.arming_counts.ARMED_AWAY, d.arming_counts.ARMED_HOME, d.arming_counts.DISARMED];
+                chartArming.update();
+
+                // Hour + Day of week
+                chartHour.data.datasets[0].data = d.trigger_by_hour;
+                chartHour.update();
+                chartDow.data.datasets[0].data = d.trigger_by_dow;
+                chartDow.update();
+
+                // Timeline
+                const hasT = d.timeline.length > 0;
+                document.getElementById('emptyTimeline').classList.toggle('d-none', hasT);
+                document.getElementById('chartTimeline').classList.toggle('d-none', !hasT);
+                update(chartTimeline, d.timeline.map(r => r.date), [{
+                    data: d.timeline.map(r => r.count),
+                    borderColor: C.blue,
+                    backgroundColor: 'rgba(13,110,253,0.15)',
+                    fill: true, tension: 0.3,
+                }]);
+
+                // Zone exclusions
+                const hasE = d.zone_exclusions.length > 0;
+                document.getElementById('emptyExclusions').classList.toggle('d-none', hasE);
+                document.getElementById('chartExclusions').classList.toggle('d-none', !hasE);
+                update(chartExclusions,
+                    d.zone_exclusions.map(z => z.zone__name || `Zone ${z.zone__zone_id}`),
+                    [{ data: d.zone_exclusions.map(z => z.count), backgroundColor: C.teal, borderRadius: 3 }]
+                );
+
+                // User activity
+                const users = {};
+                d.user_activity.forEach(r => {
+                    if (!users[r.triggered_by__username]) users[r.triggered_by__username] = { arms: 0, disarms: 0 };
+                    if (r.event_type === 'DISARMED') users[r.triggered_by__username].disarms += r.count;
+                    else users[r.triggered_by__username].arms += r.count;
+                });
+                const names = Object.keys(users);
+                const hasU = names.length > 0;
+                document.getElementById('emptyUsers').classList.toggle('d-none', hasU);
+                document.getElementById('chartUsers').classList.toggle('d-none', !hasU);
+                update(chartUsers, names, [
+                    { label: 'Arms',   data: names.map(u => users[u].arms),   backgroundColor: C.red,   borderRadius: 3 },
+                    { label: 'Disarms', data: names.map(u => users[u].disarms), backgroundColor: C.green, borderRadius: 3 },
+                ]);
+            });
+    }
+
+    let currentRange = 'week';
+
+    document.getElementById('rangeSelector').addEventListener('click', e => {
+        const btn = e.target.closest('.range-btn');
+        if (!btn) return;
+        document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentRange = btn.dataset.range;
+        loadData(currentRange);
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', () => loadData(currentRange));
+
+    loadData(currentRange);
+</script>
+
+{% endblock %}

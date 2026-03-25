@@ -74,8 +74,51 @@
     </div>
 </div>
 
+<!-- System Settings -->
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <h5 class="mb-0">System Settings</h5>
+</div>
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <div class="fw-semibold">ESP OTA Updates</div>
+                <small class="text-muted">Allow the Ness2Wifi bridge to receive over-the-air firmware updates</small>
+            </div>
+            <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" role="switch" id="otaToggle"
+                       {% if system_status.ness2wifi_ota_enabled %}checked{% endif %}
+                       {% if not system_status %}disabled{% endif %}>
+            </div>
+        </div>
+        <hr class="my-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <div class="fw-semibold">ESP Offline Banner</div>
+                <small class="text-muted">Show a warning on the dashboard if the ESP hasn't checked in for more than 5 minutes</small>
+            </div>
+            <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" role="switch" id="espOfflineBannerToggle">
+            </div>
+        </div>
+        {% if system_status %}
+        <small class="text-muted d-block mt-2">
+            ESP IP: <strong>{{ system_status.ness2wifi_ip }}</strong> &nbsp;|&nbsp;
+            FW: <strong>{{ system_status.ness2wifi_fw_version }}</strong>
+        </small>
+        {% endif %}
+    </div>
+</div>
+
 <script>
     const csrfToken = '{{ csrf_token }}';
+
+    // ESP offline banner toggle (localStorage)
+    const espBannerToggle = document.getElementById('espOfflineBannerToggle');
+    espBannerToggle.checked = localStorage.getItem('espOfflineBannerEnabled') === 'true';
+    espBannerToggle.addEventListener('change', () => {
+        localStorage.setItem('espOfflineBannerEnabled', espBannerToggle.checked ? 'true' : 'false');
+    });
 
     document.querySelectorAll('.zone-row').forEach(row => {
         const zoneId = row.dataset.zoneId;
@@ -101,6 +144,18 @@
 
         saveBtn.addEventListener('click', () => saveName());
         input.addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') cancelBtn.click(); });
+
+        const otaToggle = document.getElementById('otaToggle');
+        if (otaToggle) {
+            otaToggle.addEventListener('change', async () => {
+                const resp = await fetch('/settings/ota/toggle/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken },
+                });
+                const data = await resp.json();
+                if (!data.ok) otaToggle.checked = !otaToggle.checked;
+            });
+        }
 
         async function saveName() {
             const newName = input.value.trim();

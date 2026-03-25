@@ -57,6 +57,10 @@
                 {% if user.is_superuser %}
 
                     <li class="nav-item">
+                        <a class="nav-link text-light" href="{% url 'statistics' %}">Statistics</a>
+                    </li>
+
+                    <li class="nav-item">
                         <a class="nav-link" target="_blank" href="{% url 'home' %}api/">API</a>
                     </li>
 
@@ -65,6 +69,10 @@
                     </li>
 
                 {% endif %}
+
+                    <li class="nav-item">
+                        <a class="nav-link text-light" href="#" data-bs-toggle="modal" data-bs-target="#backupCodesModal" data-bs-dismiss="offcanvas">Backup Codes</a>
+                    </li>
 
                     <li class="nav-item">
                         <a class="nav-link text-light" href="{% url 'logout' %}">Logout</a>
@@ -114,6 +122,80 @@
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js');
     }
+</script>
+
+<!-- Backup Codes Modal -->
+<div class="modal fade" id="backupCodesModal" tabindex="-1" aria-labelledby="backupCodesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-secondary">
+            <div class="modal-header">
+                <h5 class="modal-title" id="backupCodesModalLabel">
+                    <i class="bi bi-shield-lock me-2"></i>2FA Backup Codes
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3">
+                    Use these one-time codes to sign in if you lose access to your authenticator app.
+                    Each code can only be used once.
+                </p>
+                <div id="backupCodesContainer" class="text-center">
+                    <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-outline-danger btn-sm" id="generateCodesBtn">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Generate New Codes
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const modal = document.getElementById('backupCodesModal');
+    const container = document.getElementById('backupCodesContainer');
+    const generateBtn = document.getElementById('generateCodesBtn');
+
+    function renderCodes(codes) {
+        if (!codes || codes.length === 0) {
+            container.innerHTML = '<p class="text-muted small">No backup codes. Generate some below.</p>';
+            return;
+        }
+        const grid = codes.map(c =>
+            `<code class="d-inline-block px-3 py-1 m-1 rounded bg-body-secondary border border-secondary font-monospace">${c}</code>`
+        ).join('');
+        container.innerHTML = `<div class="d-flex flex-wrap justify-content-center">${grid}</div>
+            <p class="text-muted small mt-2 mb-0">${codes.length} code${codes.length !== 1 ? 's' : ''} remaining</p>`;
+    }
+
+    modal.addEventListener('show.bs.modal', function () {
+        container.innerHTML = '<div class="spinner-border spinner-border-sm text-secondary" role="status"></div>';
+        fetch('{% url "backup-codes" %}')
+            .then(r => r.json())
+            .then(data => renderCodes(data.codes))
+            .catch(() => { container.innerHTML = '<p class="text-danger small">Failed to load codes.</p>'; });
+    });
+
+    generateBtn.addEventListener('click', function () {
+        if (!confirm('This will invalidate all existing backup codes. Continue?')) return;
+        generateBtn.disabled = true;
+        fetch('{% url "generate-backup-codes" %}', {
+            method: 'POST',
+            headers: {'X-CSRFToken': getCookie('csrftoken')},
+        })
+            .then(r => r.json())
+            .then(data => { renderCodes(data.codes); generateBtn.disabled = false; })
+            .catch(() => { container.innerHTML = '<p class="text-danger small">Failed to generate codes.</p>'; generateBtn.disabled = false; });
+    });
+
+    function getCookie(name) {
+        const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+        return v ? v[2] : '';
+    }
+})();
 </script>
 
 <!-- Session timeout warning modal -->

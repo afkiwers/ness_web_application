@@ -1,7 +1,11 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
+from users import views
 
 urlpatterns = [
+    path('backup-codes/', views.backup_codes, name='backup-codes'),
+    path('backup-codes/generate/', views.generate_backup_codes, name='generate-backup-codes'),
+
     path('logout/', auth_views.LogoutView.as_view(template_name='users/logout.html'), name='logout'),
 
     path('password-reset/',

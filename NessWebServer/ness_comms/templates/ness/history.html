@@ -52,12 +52,15 @@
 {% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h5 class="mb-0">Alarm Event History</h5>
-    <small class="text-muted">
-        <span class="ws-status" id="wsStatus"></span>
-        <span id="wsStatusText">Connecting…</span>
-    </small>
+    <div class="d-flex align-items-center gap-3">
+        <small class="text-muted">
+            <span class="ws-status" id="wsStatus"></span>
+            <span id="wsStatusText">Connecting…</span>
+        </small>
+        <a href="{% url 'history-export' %}" class="btn btn-sm btn-outline-secondary">&#x2B07; Export CSV</a>
+    </div>
 </div>
 
 <div class="card">

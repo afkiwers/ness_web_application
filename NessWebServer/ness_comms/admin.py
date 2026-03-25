@@ -1,5 +1,5 @@
 from django.contrib import admin
-from ness_comms.models import Zone, UserInput, SystemStatus, AlarmEvent
+from ness_comms.models import Zone, UserInput, SystemStatus, AlarmEvent, Webhook
 from ness_comms.broadcast import broadcast_zone_update, broadcast_system_update, broadcast_user_input_ack
 
 
@@ -39,7 +39,13 @@ class AlarmEventDisplay(admin.ModelAdmin):
     readonly_fields = ['timestamp']
 
 
+class WebhookDisplay(admin.ModelAdmin):
+    list_display = ['name', 'url', 'enabled', 'send_all_events']
+    list_editable = ['enabled']
+
+
 admin.site.register(Zone, ZoneDisplay)
 admin.site.register(SystemStatus, SystemStatusDisplay)
 admin.site.register(UserInput, OutputEventDataDisplay)
 admin.site.register(AlarmEvent, AlarmEventDisplay)
+admin.site.register(Webhook, WebhookDisplay)

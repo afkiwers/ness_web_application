@@ -5,6 +5,11 @@ services:
     restart: unless-stopped
     networks:
       - default
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
 
   django:
     image: ness_web:django
@@ -24,6 +29,11 @@ services:
       - redis
     networks:
       - default
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   nginx:
     image: ness_web:nginx
@@ -38,6 +48,11 @@ services:
       - log_nginx:/var/log/nginx/
     networks:
       - default
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
 volumes:
   log_gunicorn:

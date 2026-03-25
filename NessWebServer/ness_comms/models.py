@@ -179,3 +179,35 @@ class AlarmEvent(models.Model):
 
     def __str__(self):
         return f'{self.get_event_type_display()} at {self.timestamp}'
+
+
+class Webhook(models.Model):
+
+    class Meta:
+        verbose_name = "Webhook"
+        verbose_name_plural = "Webhooks"
+
+    name = models.CharField("Name", max_length=100)
+    url = models.URLField("URL")
+    secret = models.CharField(
+        "HMAC Secret",
+        max_length=200,
+        blank=True,
+        default='',
+        help_text="Optional. If set, a X-Ness-Signature header (HMAC-SHA256) is added to each request.",
+    )
+    enabled = models.BooleanField("Enabled", default=True)
+    send_all_events = models.BooleanField(
+        "Send All Events",
+        default=False,
+        help_text="If checked, all event types are sent. Otherwise only the event types listed below are sent.",
+    )
+    events = models.JSONField(
+        "Event Types",
+        default=list,
+        blank=True,
+        help_text="List of event type strings (e.g. [\"ARMED_AWAY\", \"SIREN_ON\"]). Ignored if Send All Events is checked.",
+    )
+
+    def __str__(self):
+        return f'{self.name} → {self.url}'
