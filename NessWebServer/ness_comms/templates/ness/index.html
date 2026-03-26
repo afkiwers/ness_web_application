@@ -320,6 +320,27 @@
 
         var pendingArmId = null;
 
+        // ── ESP offline banner ────────────────────────────────────────────────────
+        const ESP_OFFLINE_MINS = 5;
+        let espLastSeen = null;
+        let espOfflineBannerEnabled = false;
+
+        function checkEspOfflineBanner() {
+            const banner = document.getElementById('espOfflineBanner');
+            if (!espOfflineBannerEnabled) {
+                banner.classList.add('d-none');
+                return;
+            }
+            if (!espLastSeen) {
+                banner.classList.remove('d-none');
+                return;
+            }
+            const ageMs = new Date() - new Date(espLastSeen);
+            banner.classList.toggle('d-none', ageMs <= ESP_OFFLINE_MINS * 60 * 1000);
+        }
+
+        setInterval(checkEspOfflineBanner, 30000);
+
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl)
@@ -459,8 +480,10 @@
             if (e.ota_enabled !== undefined) {
                 document.getElementById('otaBanner').classList.toggle('d-none', !e.ota_enabled);
             }
-            if (e.esp_offline_banner_enabled !== undefined) {
-                document.getElementById('espOfflineBanner').classList.toggle('d-none', !e.esp_offline_banner_enabled);
+            if (e.esp_last_seen !== undefined) espLastSeen = e.esp_last_seen;
+            if (e.esp_offline_banner_enabled !== undefined) espOfflineBannerEnabled = e.esp_offline_banner_enabled;
+            if (e.esp_last_seen !== undefined || e.esp_offline_banner_enabled !== undefined) {
+                checkEspOfflineBanner();
             }
             let arm_btns = document.getElementsByName("arm_button");
             let disarm_btns = document.getElementsByName("disarm_button");

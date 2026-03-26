@@ -2,6 +2,9 @@ import datetime
 import logging
 import zoneinfo
 
+_last_heartbeat_at = None
+_HEARTBEAT_INTERVAL = 30  # seconds
+
 import pytz
 from nessclient import BaseEvent
 from nessclient.packet import CommandType, Packet
@@ -35,10 +38,17 @@ class NessSystemStatusViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch']
 
     def list(self, request, *args, **kwargs):
-        # Update status_last_requested each time the ESP polls this endpoint
+        global _last_heartbeat_at
         ness_status = SystemStatus.objects.get_or_create(id=1)[0]
-        ness_status.status_last_requested = datetime.datetime.now(tz=datetime.timezone.utc)
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        ness_status.status_last_requested = now
         ness_status.save(update_fields=['status_last_requested'])
+        # Broadcast a heartbeat every 30 s so connected clients keep esp_last_seen fresh
+        if (_last_heartbeat_at is None or
+                (now - _last_heartbeat_at).total_seconds() >= _HEARTBEAT_INTERVAL):
+            from ness_comms.broadcast import broadcast_system_update
+            broadcast_system_update(ness_status)
+            _last_heartbeat_at = now
         return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
