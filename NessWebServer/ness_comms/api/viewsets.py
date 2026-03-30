@@ -111,6 +111,8 @@ class NessSystemStatusViewSet(viewsets.ModelViewSet):
                     record_alarm_event(AlarmEvent.EventType.DISARMED, user=request.user)
                 else:
                     arming_cmd = request.data.get("arming_cmd")
+                    if arming_cmd not in ('H', 'A'):
+                        return Response({'error': 'Invalid arming command.'}, status=status.HTTP_400_BAD_REQUEST)
                     #          e.g H0212E to Arm HOME MODE
                     cmds.append(f'{arming_cmd}{request.user.panel_code}E')
                     evt = AlarmEvent.EventType.ARMED_HOME if arming_cmd == 'H' else AlarmEvent.EventType.ARMED_AWAY
@@ -331,6 +333,13 @@ class UserInputViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch']
 
     def get_queryset(self):
+        # Only the ESP bridge (API-key auth, anonymous user) should read the
+        # pending command queue. Regular authenticated users have no need to
+        # enumerate UserInput records, and those records contain encoded panel
+        # codes that must not be exposed.
+        if self.request.user.is_authenticated:
+            return UserInput.objects.none()
+
         queryset = UserInput.objects.all()
         if self.request.query_params.get('pending'):
             queryset = queryset.filter(

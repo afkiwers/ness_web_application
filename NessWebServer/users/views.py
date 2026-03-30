@@ -30,7 +30,7 @@ def generate_shortcut_token(request):
 @login_required
 @require_POST
 def revoke_shortcut_token(request):
-    request.user.shortcut_token = ''
+    request.user.shortcut_token = None
     request.user.save(update_fields=['shortcut_token'])
     return JsonResponse({'ok': True})
 

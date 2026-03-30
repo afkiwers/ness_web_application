@@ -301,9 +301,8 @@ def shortcut_disarm(request):
 
     from django.contrib.auth import get_user_model
     User = get_user_model()
-    try:
-        user = User.objects.get(shortcut_token=token, is_active=True)
-    except User.DoesNotExist:
+    user = User.objects.filter(shortcut_token=token, is_active=True).first()
+    if not user:
         return JsonResponse({'ok': False, 'error': 'Unauthorized'}, status=401)
 
     if not getattr(user, 'panel_code', None):

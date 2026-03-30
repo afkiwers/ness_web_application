@@ -209,3 +209,4 @@ __marimo__/
 NessWebServer/static-files/
 *.tar
 *.code-workspace
+.claude/
