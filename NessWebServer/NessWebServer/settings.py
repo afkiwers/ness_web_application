@@ -32,10 +32,6 @@ INSTALLED_APPS = [
     'crispy_forms',
     'crispy_bootstrap5',
     'axes',
-    'django_otp',
-    'django_otp.plugins.otp_static',
-    'django_otp.plugins.otp_totp',
-    'two_factor',
     'ness_comms',
     'users',
     'error_page',
@@ -50,7 +46,6 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django_otp.middleware.OTPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.locale.LocaleMiddleware',
@@ -182,7 +177,7 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000000
 
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
-LOGIN_URL = 'two_factor:login'
+LOGIN_URL = '/accounts/login/'
 
 # Keep sessions alive until explicit logout (don't expire on browser close)
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False

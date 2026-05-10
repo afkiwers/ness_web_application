@@ -18,7 +18,7 @@ from django.conf.urls.static import static
 from django.urls import path, include
 from django.views.generic import TemplateView
 from rest_framework.authtoken import views as rest_views
-from two_factor.urls import urlpatterns as tf_urls
+from django.contrib.auth import views as auth_views
 
 from NessWebServer import settings
 from NessWebServer.api.router import api_logout, main_router
@@ -26,7 +26,8 @@ from users.views import locked_out
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path('', include(tf_urls)),
+    path('accounts/login/', auth_views.LoginView.as_view(template_name='users/login.html'), name='login'),
+    path('accounts/logout/', auth_views.LogoutView.as_view(template_name='users/logout.html'), name='logout'),
     path('user/', include('users.urls')),
     path('', include('ness_comms.urls')),
     path('locked-out/', locked_out, name='locked-out'),

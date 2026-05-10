@@ -25,19 +25,6 @@ def home(request):
     return render(request, 'ness/index.html', context)
 
 
-@login_required
-def history(request):
-    # Initial page load — JS connects via WebSocket for live updates
-    events = AlarmEvent.objects.select_related('zone', 'triggered_by').order_by('-timestamp')[:100]
-    return render(request, 'ness/history.html', {'events': events})
-
-
-@login_required
-def zone_history(request):
-    zones = Zone.objects.filter(hidden=False).order_by('zone_id')
-    return render(request, 'ness/zone_history.html', {'zones': zones})
-
-
 @staff_member_required
 def zone_settings(request):
     zones = Zone.objects.all().order_by('zone_id')
@@ -179,22 +166,6 @@ def health_check(request):
         'redis': 'ok' if redis_ok else 'error',
         'esp_last_seen': esp_last_seen,
     })
-
-
-@login_required
-def history_export(request):
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="alarm_history.csv"'
-    writer = csv.writer(response)
-    writer.writerow(['Timestamp (UTC)', 'Event', 'Zone', 'User'])
-    for e in AlarmEvent.objects.select_related('zone', 'triggered_by').order_by('-timestamp'):
-        writer.writerow([
-            e.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-            e.get_event_type_display(),
-            str(e.zone) if e.zone else '',
-            e.triggered_by.username if e.triggered_by else 'Panel',
-        ])
-    return response
 
 
 @login_required
