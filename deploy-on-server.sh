@@ -37,6 +37,12 @@ echo "[4/5] Loading images and restarting on Synology..."
 ssh "${SERVER_USER}@${SERVER_HOST}" bash <<EOF
   set -e
   export PATH="\$PATH:/usr/local/bin:/var/packages/ContainerManager/target/bin:/var/packages/Docker/target/usr/bin"
+
+  # Ensure all required host directories exist before starting containers.
+  # Docker named volumes (logs, static, media) are managed by Compose and created
+  # automatically; only the project directory itself needs to exist on the host.
+  mkdir -p "${SERVER_PATH}"
+
   docker load -i "${SERVER_PATH}/$(basename "$TAR_FILE")"
   cd "${SERVER_PATH}"
   docker compose -f docker-compose.synology.yml up -d --force-recreate --remove-orphans
