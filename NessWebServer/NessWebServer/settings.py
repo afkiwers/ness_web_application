@@ -72,6 +72,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'ness_comms.context_processors.version_info',
             ],
         },
     },
@@ -79,11 +80,25 @@ TEMPLATES = [
 
 ASGI_APPLICATION = 'NessWebServer.asgi.application'
 
+# Redis — build URL from parts when REDIS_URL is not explicitly set
+def _redis_url() -> str:
+    explicit = env('REDIS_URL', default='')
+    if explicit:
+        return explicit
+    password = env('REDIS_PASSWORD', default='')
+    host     = env('REDIS_HOST',     default='redis')
+    port     = env('REDIS_PORT',     default='6379')
+    db       = env('REDIS_DB',       default='0')
+    auth     = f':{password}@' if password else ''
+    return f'redis://{auth}{host}:{port}/{db}'
+
+REDIS_URL = _redis_url()
+
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [(env('REDIS_HOST', default='redis'), env.int('REDIS_PORT', default=6379))],
+            'hosts': [REDIS_URL],
         },
     },
 }
