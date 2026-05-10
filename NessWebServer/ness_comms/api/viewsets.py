@@ -1,5 +1,6 @@
 import datetime
 import logging
+import threading
 import zoneinfo
 
 _last_heartbeat_at = None
@@ -186,7 +187,7 @@ class NessCommsRawDataViewSet(viewsets.ViewSet):
             ness_status.ness2wifi_fw_version = fw
             ness_status.status_last_requested = datetime.datetime.now(tz=datetime.timezone.utc)
 
-            ness_status.save()
+            ness_status.save(update_fields=['ness2wifi_ip', 'ness2wifi_fw_version', 'status_last_requested'])
 
             try:
                 # Use the nessclient lib to decode the data
@@ -210,7 +211,7 @@ class NessCommsRawDataViewSet(viewsets.ViewSet):
                             zone.save()
                             broadcast_zone_update(zone)
                             evt = AlarmEvent.EventType.ZONE_SEALED if event.type == SystemStatusEvent.EventType.SEALED else AlarmEvent.EventType.ZONE_TRIGGERED
-                            record_alarm_event(evt, zone=zone)
+                            threading.Thread(target=record_alarm_event, args=(evt,), kwargs={'zone': zone}, daemon=True).start()
 
                         except Exception as e:
                             print(f"Error updating zone status: {str(e)}")
@@ -226,14 +227,15 @@ class NessCommsRawDataViewSet(viewsets.ViewSet):
                     ):
 
                         try:
+                            alarm_evt = None
 
                             # Is the siren active?
                             if event.type == SystemStatusEvent.EventType.OUTPUT_ON:
                                 ness_status.alarm_siren_on = True
-                                record_alarm_event(AlarmEvent.EventType.SIREN_ON)
+                                alarm_evt = AlarmEvent.EventType.SIREN_ON
                             elif event.type == SystemStatusEvent.EventType.OUTPUT_OFF:
                                 ness_status.alarm_siren_on = False
-                                record_alarm_event(AlarmEvent.EventType.SIREN_OFF)
+                                alarm_evt = AlarmEvent.EventType.SIREN_OFF
 
                             # Is the delay active?
                             if event.type == SystemStatusEvent.EventType.EXIT_DELAY_START:
@@ -246,20 +248,23 @@ class NessCommsRawDataViewSet(viewsets.ViewSet):
                                 ness_status.is_armed_home = True
                                 ness_status.is_armed_away = False
                                 ness_status.is_disarmed = False
-                                record_alarm_event(AlarmEvent.EventType.ARMED_HOME)
+                                alarm_evt = AlarmEvent.EventType.ARMED_HOME
                             elif event.type == SystemStatusEvent.EventType.ARMED_AWAY:
                                 ness_status.is_armed_home = False
                                 ness_status.is_armed_away = True
                                 ness_status.is_disarmed = False
-                                record_alarm_event(AlarmEvent.EventType.ARMED_AWAY)
+                                alarm_evt = AlarmEvent.EventType.ARMED_AWAY
                             elif event.type == SystemStatusEvent.EventType.DISARMED:
                                 ness_status.is_armed_home = False
                                 ness_status.is_armed_away = False
                                 ness_status.is_disarmed = True
-                                record_alarm_event(AlarmEvent.EventType.DISARMED)
+                                alarm_evt = AlarmEvent.EventType.DISARMED
 
                             ness_status.save()
+                            # Broadcast to dashboard immediately before recording the event
                             broadcast_system_update(ness_status)
+                            if alarm_evt:
+                                threading.Thread(target=record_alarm_event, args=(alarm_evt,), daemon=True).start()
 
                         except Exception as e:
                             print(f"Error updating arming state: {str(e)}")
