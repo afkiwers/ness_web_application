@@ -42,15 +42,7 @@
                         <a class="nav-link text-light" href="{% url 'home' %}">Dashboard</a>
                     </li>
 
-                    <li class="nav-item">
-                        <a class="nav-link text-light" href="{% url 'alarm-history' %}">History</a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link text-light" href="{% url 'zone-history' %}">Zone History</a>
-                    </li>
-
-                {% if user.is_staff %}
+{% if user.is_staff %}
 
                     <li class="nav-item">
                         <a class="nav-link text-light" href="{% url 'zone-settings' %}">Settings</a>
@@ -76,6 +68,10 @@
 
                     <li class="nav-item">
                         <a class="nav-link text-light" href="#" data-bs-toggle="modal" data-bs-target="#backupCodesModal" data-bs-dismiss="offcanvas">Backup Codes</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link text-light" href="#" data-bs-toggle="modal" data-bs-target="#versionInfoModal" data-bs-dismiss="offcanvas">About</a>
                     </li>
 
                     <li class="nav-item">
@@ -366,6 +362,71 @@
 
 })();
 </script>
+
+{% if ness_version_info %}
+{{ ness_version_info.copy_text|json_script:"nessVersionCopyText" }}
+<!-- Version Info Modal -->
+<div class="modal fade" id="versionInfoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-secondary">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ ness_version_info.title }}</h5>
+                <span class="badge bg-primary ms-2" style="font-size:0.65rem;">{{ ness_version_info.status_badge }}</span>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <table class="table table-sm table-hover mb-0">
+                    <tbody>
+                    {% for row in ness_version_info.version_rows %}
+                    <tr>
+                        <td class="text-muted ps-3" style="width:40%; font-size:0.85rem; white-space:nowrap;">{{ row.label }}</td>
+                        <td style="font-size:0.85rem;">
+                            <span{% if row.accent %} class="text-primary fw-semibold"{% endif %}>{{ row.display_value }}</span>
+                        </td>
+                        <td class="pe-3 text-end" style="width:36px;">
+                            <button class="btn btn-sm btn-link p-0 text-secondary version-copy-btn"
+                                    data-copy-text="{{ row.copy_value }}"
+                                    title="Copy">
+                                <i class="bi bi-clipboard" style="font-size:0.8rem;"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="versionCopyAllBtn">
+                    <i class="bi bi-clipboard me-1"></i>Copy all
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    document.querySelectorAll('.version-copy-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            navigator.clipboard.writeText(btn.dataset.copyText || '');
+            var icon = btn.querySelector('i');
+            icon.className = 'bi bi-clipboard-check';
+            setTimeout(function() { icon.className = 'bi bi-clipboard'; }, 1500);
+        });
+    });
+    var copyAllBtn = document.getElementById('versionCopyAllBtn');
+    if (copyAllBtn) {
+        copyAllBtn.addEventListener('click', function() {
+            var el = document.getElementById('nessVersionCopyText');
+            var text = el ? JSON.parse(el.textContent) : '';
+            navigator.clipboard.writeText(text);
+            copyAllBtn.innerHTML = '<i class="bi bi-clipboard-check me-1"></i>Copied!';
+            setTimeout(function() { copyAllBtn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy all'; }, 1500);
+        });
+    }
+})();
+</script>
+{% endif %}
 
 </body>
 

@@ -34,5 +34,15 @@ COPY . .
 # Normalise entrypoint (handle CRLF and permissions)
 RUN dos2unix ./entrypoint.sh && chmod +x ./entrypoint.sh
 
+# Git metadata baked in at build time by deploy-on-server.sh
+ARG NESS_GIT_TAG=""
+ARG NESS_GIT_BRANCH=""
+ARG NESS_GIT_COMMIT=""
+ARG NESS_GIT_COMMIT_DATE=""
+ENV NESS_GIT_TAG=$NESS_GIT_TAG
+ENV NESS_GIT_BRANCH=$NESS_GIT_BRANCH
+ENV NESS_GIT_COMMIT=$NESS_GIT_COMMIT
+ENV NESS_GIT_COMMIT_DATE=$NESS_GIT_COMMIT_DATE
+
 # Set entrypoint
 ENTRYPOINT ["./entrypoint.sh"]

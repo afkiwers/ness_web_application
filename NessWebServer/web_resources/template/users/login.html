@@ -1,0 +1,145 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <title>Ness Panel - Sign In</title>
+    {% include 'header.html' %}
+    <style>
+        body {
+            background-color: #0d0d0d;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .login-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #ffc107, #e65100);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 1.8rem;
+        }
+
+        .login-card h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 0.25rem;
+        }
+
+        .login-card .subtitle {
+            color: #6c757d;
+            font-size: 0.875rem;
+            margin-bottom: 2rem;
+        }
+
+        .login-card label {
+            color: #adb5bd;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.4rem;
+        }
+
+        .login-card .form-control {
+            background: #111111;
+            border: 1px solid #333;
+            color: #fff;
+            border-radius: 8px;
+            padding: 0.65rem 1rem;
+            font-size: 0.9375rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .login-card .form-control:focus {
+            background: #111111;
+            border-color: #ffc107;
+            box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.15);
+            color: #fff;
+        }
+
+        .login-card .form-control::placeholder { color: #555; }
+
+        .btn-signin {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, #ffc107, #e65100);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-weight: 700;
+            font-size: 0.9375rem;
+            letter-spacing: 0.03em;
+            margin-top: 0.5rem;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .btn-signin:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .invalid-feedback, .text-danger { font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <div class="login-icon">🔒</div>
+    <h1 class="text-center">Ness Panel</h1>
+    <p class="subtitle text-center">Sign in to access your security panel</p>
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger py-2 small">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+        <div class="mb-3">
+            <label for="id_username">Username</label>
+            <input type="text" id="id_username" name="username" autofocus autocomplete="username"
+                   class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+                   value="{{ form.username.value|default:'' }}">
+            {% if form.username.errors %}
+              <div class="invalid-feedback">{{ form.username.errors|join:", " }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label for="id_password">Password</label>
+            <input type="password" id="id_password" name="password" autocomplete="current-password"
+                   class="form-control {% if form.password.errors %}is-invalid{% endif %}">
+            {% if form.password.errors %}
+              <div class="invalid-feedback">{{ form.password.errors|join:", " }}</div>
+            {% endif %}
+        </div>
+
+        <button type="submit" class="btn-signin">Sign In</button>
+    </form>
+
+    <p class="text-center mt-3" style="color:#6c757d;font-size:0.8125rem;">
+        Forgot your password? <a href="{% url 'password_reset' %}" style="color:#ffc107;text-decoration:none;">Reset it</a>
+    </p>
+</div>
+
+</body>
+</html>

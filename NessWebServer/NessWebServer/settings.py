@@ -32,10 +32,6 @@ INSTALLED_APPS = [
     'crispy_forms',
     'crispy_bootstrap5',
     'axes',
-    'django_otp',
-    'django_otp.plugins.otp_static',
-    'django_otp.plugins.otp_totp',
-    'two_factor',
     'ness_comms',
     'users',
     'error_page',
@@ -50,7 +46,6 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django_otp.middleware.OTPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.locale.LocaleMiddleware',
@@ -72,6 +67,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'ness_comms.context_processors.version_info',
             ],
         },
     },
@@ -79,11 +75,25 @@ TEMPLATES = [
 
 ASGI_APPLICATION = 'NessWebServer.asgi.application'
 
+# Redis — build URL from parts when REDIS_URL is not explicitly set
+def _redis_url() -> str:
+    explicit = env('REDIS_URL', default='')
+    if explicit:
+        return explicit
+    password = env('REDIS_PASSWORD', default='')
+    host     = env('REDIS_HOST',     default='redis')
+    port     = env('REDIS_PORT',     default='6379')
+    db       = env('REDIS_DB',       default='0')
+    auth     = f':{password}@' if password else ''
+    return f'redis://{auth}{host}:{port}/{db}'
+
+REDIS_URL = _redis_url()
+
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [(env('REDIS_HOST', default='redis'), env.int('REDIS_PORT', default=6379))],
+            'hosts': [REDIS_URL],
         },
     },
 }
@@ -167,7 +177,7 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000000
 
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
-LOGIN_URL = 'two_factor:login'
+LOGIN_URL = '/accounts/login/'
 
 # Keep sessions alive until explicit logout (don't expire on browser close)
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False

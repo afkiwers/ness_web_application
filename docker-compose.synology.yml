@@ -13,19 +13,10 @@ services:
 
   django:
     image: ness_web:django
-    build:
-      context: ./NessWebServer
-      args:
-        NESS_GIT_TAG: ${NESS_GIT_TAG:-}
-        NESS_GIT_BRANCH: ${NESS_GIT_BRANCH:-}
-        NESS_GIT_COMMIT: ${NESS_GIT_COMMIT:-}
-        NESS_GIT_COMMIT_DATE: ${NESS_GIT_COMMIT_DATE:-}
-    security_opt:
-      - seccomp:unconfined
+    restart: unless-stopped
     env_file:
       - .env
     volumes:
-      - ./NessWebServer:/NessWebServer
       - static_files:/app/static-files
       - media_files:/app/media-files
       - log_gunicorn:/var/log/gunicorn/
@@ -43,7 +34,7 @@ services:
 
   nginx:
     image: ness_web:nginx
-    build: ./nginx
+    restart: unless-stopped
     depends_on:
       - django
     ports:

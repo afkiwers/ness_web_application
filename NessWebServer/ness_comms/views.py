@@ -25,19 +25,6 @@ def home(request):
     return render(request, 'ness/index.html', context)
 
 
-@login_required
-def history(request):
-    # Initial page load — JS connects via WebSocket for live updates
-    events = AlarmEvent.objects.select_related('zone', 'triggered_by').order_by('-timestamp')[:100]
-    return render(request, 'ness/history.html', {'events': events})
-
-
-@login_required
-def zone_history(request):
-    zones = Zone.objects.filter(hidden=False).order_by('zone_id')
-    return render(request, 'ness/zone_history.html', {'zones': zones})
-
-
 @staff_member_required
 def zone_settings(request):
     zones = Zone.objects.all().order_by('zone_id')
@@ -182,22 +169,6 @@ def health_check(request):
 
 
 @login_required
-def history_export(request):
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="alarm_history.csv"'
-    writer = csv.writer(response)
-    writer.writerow(['Timestamp (UTC)', 'Event', 'Zone', 'User'])
-    for e in AlarmEvent.objects.select_related('zone', 'triggered_by').order_by('-timestamp'):
-        writer.writerow([
-            e.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-            e.get_event_type_display(),
-            str(e.zone) if e.zone else '',
-            e.triggered_by.username if e.triggered_by else 'Panel',
-        ])
-    return response
-
-
-@login_required
 def statistics_export(request):
     if not request.user.is_superuser:
         return HttpResponse(status=403)
@@ -301,9 +272,8 @@ def shortcut_disarm(request):
 
     from django.contrib.auth import get_user_model
     User = get_user_model()
-    try:
-        user = User.objects.get(shortcut_token=token, is_active=True)
-    except User.DoesNotExist:
+    user = User.objects.filter(shortcut_token=token, is_active=True).first()
+    if not user:
         return JsonResponse({'ok': False, 'error': 'Unauthorized'}, status=401)
 
     if not getattr(user, 'panel_code', None):
