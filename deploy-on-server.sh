@@ -20,6 +20,7 @@ export NESS_GIT_COMMIT="$GIT_COMMIT"
 export NESS_GIT_COMMIT_DATE="$GIT_COMMIT_DATE"
 
 echo "[1/5] Building images..."
+export DOCKER_DEFAULT_PLATFORM="linux/amd64"
 docker compose --project-name "$PROJECT_NAME" build django nginx
 
 echo "[2/5] Saving images to $TAR_FILE..."
