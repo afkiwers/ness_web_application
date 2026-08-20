@@ -15,7 +15,15 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # First allow NULL values (do not add the unique constraint yet) so we can
+        # safely convert empty-string values to NULL in a following data migration.
+        migrations.AlterField(
+            model_name='customuser',
+            name='shortcut_token',
+            field=models.CharField(blank=True, default=None, help_text='Long-lived token for Siri Shortcuts. Regenerate to revoke access.', max_length=64, null=True, unique=False, verbose_name='Siri Shortcut Token'),
+        ),
         migrations.RunPython(empty_to_null, migrations.RunPython.noop),
+        # Now enforce uniqueness once empty strings have been converted to NULL.
         migrations.AlterField(
             model_name='customuser',
             name='shortcut_token',

@@ -55,6 +55,18 @@ ssh "${SERVER_USER}@${SERVER_HOST}" bash <<EOF
   docker load -i "${SERVER_PATH}/$(basename "$TAR_FILE")"
   cd "${SERVER_PATH}"
   docker compose -f docker-compose.synology.yml up -d --force-recreate --remove-orphans
+
+  # Ensure migrations are applied on the running django container. Prefer `exec` when the
+  # container is healthy; fall back to `run --rm` if exec fails (container not ready yet).
+  if docker compose -f docker-compose.synology.yml ps | grep -q django; then
+    echo "Applying migrations inside existing django container..."
+    docker compose -f docker-compose.synology.yml exec -T django python manage.py migrate || \
+      docker compose -f docker-compose.synology.yml run --rm django python manage.py migrate
+  else
+    echo "No django container found; running migrations via temporary container..."
+    docker compose -f docker-compose.synology.yml run --rm django python manage.py migrate
+  fi
+
   docker compose -f docker-compose.synology.yml ps
 EOF
 
