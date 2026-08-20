@@ -1,0 +1,5 @@
+# Force LF line endings for shell scripts regardless of the checking-out
+# machine's core.autocrlf setting. Git for Windows commonly defaults to
+# autocrlf=true, which silently converts these to CRLF on checkout — that
+# breaks the shebang line and heredocs when run under Git Bash.
+*.sh text eol=lf
