@@ -13,6 +13,13 @@ daphne
 whitenoise==6.12.0
 channels==4.*
 channels-redis==4.*
+# channels-redis 4.x's receive loop doesn't correctly catch the timeout
+# exception path redis-py 5.x's async client raises internally, so its
+# blocking-read poll (waiting for the next channel message) escapes as an
+# uncaught redis.exceptions.TimeoutError every ~10s, killing every open
+# WebSocket connection. Pin to the 4.x line channels-redis was actually
+# built/tested against until it officially supports 5.x.
+redis<5
 pytz
 django-environ
 qrcode[pil]
