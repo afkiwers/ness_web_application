@@ -434,7 +434,12 @@
                 }
             };
 
-            panelSocket.onclose = function () {
+            panelSocket.onclose = function (e) {
+                // code/reason/wasClean pin down the cause of a disconnect: 1000/1001
+                // with a reason means the app or server closed it deliberately;
+                // 1006 (wasClean: false, no reason) means the underlying connection
+                // was dropped by the network or a proxy without a WS close handshake.
+                console.warn('WebSocket closed — code:', e.code, 'reason:', e.reason || '(none)', 'wasClean:', e.wasClean);
                 panelSocket = null;
                 clearTimeout(pingTimer);
                 clearTimeout(pongTimer);
@@ -446,7 +451,8 @@
                 reconnectTimer = setTimeout(connectWebSocket, 3000);
             };
 
-            panelSocket.onerror = function () {
+            panelSocket.onerror = function (e) {
+                console.error('WebSocket error:', e);
                 panelSocket.close();
             };
         }

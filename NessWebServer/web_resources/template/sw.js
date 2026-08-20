@@ -48,10 +48,16 @@ self.addEventListener('fetch', function (event) {
             caches.match(event.request).then(function (cached) {
                 if (cached) return cached;
                 return fetch(event.request).then(function (response) {
-                    if (response.ok) {
+                    // Only http(s) requests are cacheable — a page can trigger fetch
+                    // events for chrome-extension:// and similar schemes that the
+                    // Cache API rejects, which otherwise surfaces as an unhandled
+                    // promise rejection.
+                    if (response.ok && (url.protocol === 'http:' || url.protocol === 'https:')) {
                         var clone = response.clone();
                         caches.open(CACHE_NAME).then(function (cache) {
-                            cache.put(event.request, clone);
+                            return cache.put(event.request, clone);
+                        }).catch(function (err) {
+                            console.warn('SW cache.put failed:', err);
                         });
                     }
                     return response;
@@ -67,10 +73,16 @@ self.addEventListener('fetch', function (event) {
             caches.match(event.request).then(function (cached) {
                 if (cached) return cached;
                 return fetch(event.request).then(function (response) {
-                    if (response.ok) {
+                    // Only http(s) requests are cacheable — a page can trigger fetch
+                    // events for chrome-extension:// and similar schemes that the
+                    // Cache API rejects, which otherwise surfaces as an unhandled
+                    // promise rejection.
+                    if (response.ok && (url.protocol === 'http:' || url.protocol === 'https:')) {
                         var clone = response.clone();
                         caches.open(CACHE_NAME).then(function (cache) {
-                            cache.put(event.request, clone);
+                            return cache.put(event.request, clone);
+                        }).catch(function (err) {
+                            console.warn('SW cache.put failed:', err);
                         });
                     }
                     return response;
