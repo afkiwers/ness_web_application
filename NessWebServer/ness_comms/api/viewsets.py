@@ -80,74 +80,77 @@ class NessSystemStatusViewSet(viewsets.ModelViewSet):
         return queryset
 
     def create(self, request, *args, **kwargs):
+        try:
+            # Command from WebUI
+            if request.data.get("input_command", False):
+                cmds = []
 
-        # Command from WebUI
-        if request.data.get("input_command", False):
-            cmds = []
+                if request.data.get("manual_exclude_zone"):
+                    if request.data.get("single_exclude_cmd"):
+                        # See page 28 - NESS D8 V4.5 CONTROL PANEL - USER MANUAL
+                        # We exclude each zone individually as we listen to single exclude commands
+                        selected_zone = Zone.objects.get(zone_id=request.data.get("zone_id"))
+                        cmds.append(f'X{request.user.panel_code}E')
+                        cmds.append(f'{selected_zone.zone_id}E')
+                        cmds.append(f'E')
 
-            if request.data.get("manual_exclude_zone"):
-                if request.data.get("single_exclude_cmd"):
-                    # See page 28 - NESS D8 V4.5 CONTROL PANEL - USER MANUAL
-                    # We exclude each zone individually as we listen to single exclude commands
-                    selected_zone = Zone.objects.get(zone_id=request.data.get("zone_id"))
-                    cmds.append(f'X{request.user.panel_code}E')
-                    cmds.append(f'{selected_zone.zone_id}E')
-                    cmds.append(f'E')
+                        # request zone status after toggle
+                        cmds.append(f'S06')
 
-                    # request zone status after toggle
+                        # Record the toggle event (current excluded state is about to flip)
+                        evt = AlarmEvent.EventType.ZONE_INCLUDED if selected_zone.excluded else AlarmEvent.EventType.ZONE_EXCLUDED
+                        record_alarm_event(evt, zone=selected_zone, user=request.user)
+                    else:
+
+                        # TODO: handle multiple excludes at once
+                        pass
+
+                if request.data.get("arming"):
+                    if request.data.get("disarm"):
+                        #          e.g 0212E to disarm
+                        cmds.append(f'{request.user.panel_code}E')
+                        record_alarm_event(AlarmEvent.EventType.DISARMED, user=request.user)
+                    else:
+                        arming_cmd = request.data.get("arming_cmd")
+                        if arming_cmd not in ('H', 'A'):
+                            return Response({'error': 'Invalid arming command.'}, status=status.HTTP_400_BAD_REQUEST)
+                        #          e.g H0212E to Arm HOME MODE
+                        cmds.append(f'{arming_cmd}{request.user.panel_code}E')
+                        evt = AlarmEvent.EventType.ARMED_HOME if arming_cmd == 'H' else AlarmEvent.EventType.ARMED_AWAY
+                        record_alarm_event(evt, user=request.user)
+
+                    # request zone status disarming to reflect current state of zones
                     cmds.append(f'S06')
 
-                    # Record the toggle event (current excluded state is about to flip)
-                    evt = AlarmEvent.EventType.ZONE_INCLUDED if selected_zone.excluded else AlarmEvent.EventType.ZONE_EXCLUDED
-                    record_alarm_event(evt, zone=selected_zone, user=request.user)
-                else:
+                if request.data.get("panic"):
+                    cmds.append(f'P{request.user.panel_code}E')
+                    record_alarm_event(AlarmEvent.EventType.PANIC_TRIGGERED, user=request.user)
 
-                    # TODO: handle multiple excludes at once
-                    pass
+                # check if we received a valid command
+                if len(cmds):
+                    main_cmd_id = None
+                    for i, cmd in enumerate(cmds):
+                        event = UserInput.objects.get_or_create(
+                            data=cmd,
+                            type=CommandType.USER_INTERFACE,
+                            user_input_command=True
+                        )[0]
 
-            if request.data.get("arming"):
-                if request.data.get("disarm"):
-                    #          e.g 0212E to disarm
-                    cmds.append(f'{request.user.panel_code}E')
-                    record_alarm_event(AlarmEvent.EventType.DISARMED, user=request.user)
-                else:
-                    arming_cmd = request.data.get("arming_cmd")
-                    if arming_cmd not in ('H', 'A'):
-                        return Response({'error': 'Invalid arming command.'}, status=status.HTTP_400_BAD_REQUEST)
-                    #          e.g H0212E to Arm HOME MODE
-                    cmds.append(f'{arming_cmd}{request.user.panel_code}E')
-                    evt = AlarmEvent.EventType.ARMED_HOME if arming_cmd == 'H' else AlarmEvent.EventType.ARMED_AWAY
-                    record_alarm_event(evt, user=request.user)
+                        event.timestamp = datetime.datetime.now().astimezone(tz=zoneinfo.ZoneInfo("Australia/Hobart"))
+                        event.input_command_received = False
+                        event.type_id = CommandType.USER_INTERFACE.value
+                        event.save()
 
-                # request zone status disarming to reflect current state of zones
-                cmds.append(f'S06')
+                        if i == 0:
+                            main_cmd_id = event.id
 
-            if request.data.get("panic"):
-                cmds.append(f'P{request.user.panel_code}E')
-                record_alarm_event(AlarmEvent.EventType.PANIC_TRIGGERED, user=request.user)
+                    return Response({"user_input_ack": True, "pending_id": main_cmd_id}, status=status.HTTP_201_CREATED)
 
-            # check if we received a valid command
-            if len(cmds):
-                main_cmd_id = None
-                for i, cmd in enumerate(cmds):
-                    event = UserInput.objects.get_or_create(
-                        data=cmd,
-                        type=CommandType.USER_INTERFACE,
-                        user_input_command=True
-                    )[0]
-
-                    event.timestamp = datetime.datetime.now().astimezone(tz=zoneinfo.ZoneInfo("Australia/Hobart"))
-                    event.input_command_received = False
-                    event.type_id = CommandType.USER_INTERFACE.value
-                    event.save()
-
-                    if i == 0:
-                        main_cmd_id = event.id
-
-                return Response({"user_input_ack": True, "pending_id": main_cmd_id}, status=status.HTTP_201_CREATED)
-
-        # if nothing matches return bad request
-        return Response(None, status=status.HTTP_400_BAD_REQUEST)
+            # if nothing matches return bad request
+            return Response(None, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            _LOGGER.exception("Error processing NessSystemStatusViewSet.create")
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ZoneViewSet(viewsets.ModelViewSet):

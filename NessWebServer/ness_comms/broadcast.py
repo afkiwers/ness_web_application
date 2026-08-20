@@ -111,13 +111,20 @@ def _send_push_notifications(event_type, event_display, zone):
     if not pref_field:
         return
 
-    tokens = DeviceToken.objects.filter(**{pref_field: True}).values_list('fcm_token', flat=True)
+    try:
+        tokens_qs = DeviceToken.objects.filter(**{pref_field: True}).values_list('fcm_token', flat=True)
+    except Exception as exc:
+        # Likely missing migrations or DB table not present in some environments; skip push notifications
+        logger.warning('Push notifications skipped: DeviceToken query failed: %s', exc)
+        return
+
+    tokens = list(tokens_qs)
     if not tokens:
         return
 
     # Build notification body
     body = zone.name if zone else 'System event'
-    _fcm_send(list(tokens), title=event_display, body=body, logger=logger)
+    _fcm_send(tokens, title=event_display, body=body, logger=logger)
 
 
 def _fcm_send(tokens, title, body, logger):

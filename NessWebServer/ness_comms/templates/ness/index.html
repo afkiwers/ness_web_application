@@ -320,6 +320,15 @@
 
         var pendingArmId = null;
 
+        function parseJSONorText(response) {
+            const ct = response.headers.get('content-type') || '';
+            if (!response.ok) {
+                return response.text().then(text => { throw new Error(text || response.statusText); });
+            }
+            if (ct.indexOf('application/json') !== -1) return response.json();
+            return response.text();
+        }
+
         // ── ESP offline banner ────────────────────────────────────────────────────
         const ESP_OFFLINE_MINS = 5;
         let espLastSeen = null;
@@ -386,7 +395,7 @@
                 fetch("{% url 'api-ness_comms-user-inputs-list' %}?pending=true", {
                     headers: {'Accept': 'application/json'}
                 })
-                .then(r => r.json())
+                .then(parseJSONorText)
                 .then(pending => {
                     const main = pending.find(e => !e.data.startsWith('S'));
                     if (!main) return;
@@ -564,7 +573,7 @@
                     "zone_id": e.getAttribute("zone_id")
                 })
             })
-                .then(response => response.json())
+                .then(parseJSONorText)
                 .then(response => {
                     spinner.setAttribute("hidden", "");
                     $('#ackModal').modal('toggle');
@@ -592,7 +601,7 @@
                     headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
                     body: JSON.stringify({"input_command": true, "panic": trigger})
                 })
-                    .then(response => response.json())
+                    .then(parseJSONorText)
                     .then(response => {
                         if (response.user_input_ack) {
                             $('#ackPanicModal').modal('toggle');
@@ -622,7 +631,7 @@
                     "arming_cmd": armingCmd
                 })
             })
-                .then(response => response.json())
+                .then(parseJSONorText)
                 .then(response => {
                     if (response.user_input_ack) {
                         // Spinner and modal stay open — waiting for ESP ack via WebSocket
