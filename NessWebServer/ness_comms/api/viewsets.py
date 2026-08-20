@@ -177,17 +177,24 @@ class NessCommsRawDataViewSet(viewsets.ViewSet):
             fw = serializer.validated_data.get('fw')
             otaEnabled = serializer.validated_data.get('otaEnabled')
 
-            print(f'ESP32 - otaEnabled: {otaEnabled}')
-
             # Get the current state of the NESS PCB
             ness_status = SystemStatus.objects.get_or_create(id=1)[0]
 
-            # save IP and mark the time the ESP requested data
+            # save IP, the ESP's confirmed OTA state, and mark the time it requested data
+            ota_state_changed = ness_status.ness2wifi_ota_enabled != otaEnabled
             ness_status.ness2wifi_ip = ness_pcb_ip
             ness_status.ness2wifi_fw_version = fw
+            ness_status.ness2wifi_ota_enabled = otaEnabled
             ness_status.status_last_requested = datetime.datetime.now(tz=datetime.timezone.utc)
 
-            ness_status.save(update_fields=['ness2wifi_ip', 'ness2wifi_fw_version', 'status_last_requested'])
+            ness_status.save(update_fields=[
+                'ness2wifi_ip', 'ness2wifi_fw_version', 'ness2wifi_ota_enabled', 'status_last_requested',
+            ])
+
+            # Let the dashboard/settings page know as soon as the device's actual
+            # OTA state (as opposed to the last admin-issued toggle) changes.
+            if ota_state_changed:
+                broadcast_system_update(ness_status)
 
             try:
                 # Use the nessclient lib to decode the data
