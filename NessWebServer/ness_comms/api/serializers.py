@@ -17,6 +17,7 @@ class NessSystemStatusSerializer(serializers.ModelSerializer):
             'ness2wifi_ip',
             'ness2wifi_fw_version',
             'ness2wifi_ota_enabled',
+            'ness2wifi_debug_prints_enabled',
             'esp_offline_banner_enabled',
             'is_armed_home',
             'is_armed_away',
