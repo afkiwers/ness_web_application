@@ -246,6 +246,19 @@ def toggle_ota(request):
 
 @staff_member_required
 @require_POST
+def toggle_debug_prints(request):
+    system_status = SystemStatus.objects.first()
+    if not system_status:
+        return JsonResponse({'ok': False}, status=404)
+    system_status.ness2wifi_debug_prints_enabled = not system_status.ness2wifi_debug_prints_enabled
+    system_status.save()
+    from ness_comms.broadcast import broadcast_system_update
+    broadcast_system_update(system_status)
+    return JsonResponse({'ok': True, 'debug_prints_enabled': system_status.ness2wifi_debug_prints_enabled})
+
+
+@staff_member_required
+@require_POST
 def zone_rename(request, zone_id):
     zone = get_object_or_404(Zone, zone_id=zone_id)
     new_name = request.POST.get('name', '').strip()

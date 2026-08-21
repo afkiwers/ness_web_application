@@ -36,6 +36,7 @@ def broadcast_system_update(system_status):
                 'arming_delayed_active': system_status.arming_delayed_active,
                 'esp_last_seen': system_status.status_last_requested.isoformat() if system_status.status_last_requested else None,
                 'ota_enabled': system_status.ness2wifi_ota_enabled,
+                'debug_prints_enabled': system_status.ness2wifi_debug_prints_enabled,
                 'esp_offline_banner_enabled': system_status.esp_offline_banner_enabled,
             },
         }
