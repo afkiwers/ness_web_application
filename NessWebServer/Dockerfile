@@ -22,6 +22,7 @@ RUN apt-get update && \
         pkg-config \
         curl \
         dos2unix \
+        gettext \
         && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies

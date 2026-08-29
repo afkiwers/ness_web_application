@@ -1,12 +1,18 @@
-{% load static crispy_forms_tags %}
+{% load static crispy_forms_tags i18n %}
 
 <!doctype html>
-<html lang="en" data-bs-theme="dark">
+{% get_current_language as LANGUAGE_CODE %}
+<html lang="{{ LANGUAGE_CODE }}" data-bs-theme="dark">
 <head>
 
     <title>Ness D8x/D16x Alarm Control Panel - Dashboard</title>
 
     {% include 'header.html' %}
+
+    <!-- Translation catalog for JS-driven text (arming state, siren, connectivity
+         messages, etc.) — must load before any inline script below calls
+         gettext()/interpolate(). -->
+    <script src="{% url 'javascript-catalog' %}"></script>
 
     <!-- PWA / iOS home screen -->
     <meta name="mobile-web-app-capable" content="yes">
@@ -24,7 +30,7 @@
 
 <nav class="navbar navbar-dark bg-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="{% url 'home' %}">Ness Security Panel</a>
+        <a class="navbar-brand" href="{% url 'home' %}">{% trans "Ness Security Panel" %}</a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasDarkNavbar" aria-controls="offcanvasDarkNavbar">
                 <span class="navbar-toggler-icon"></span>
@@ -32,20 +38,20 @@
 
             <div class="offcanvas offcanvas-end text-bg-dark" tabindex="-1" id="offcanvasDarkNavbar" aria-labelledby="offcanvasDarkNavbarLabel">
             <div class="offcanvas-header">
-                <h5 class="offcanvas-title" id="offcanvasDarkNavbarLabel">Navigation Menu</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                <h5 class="offcanvas-title" id="offcanvasDarkNavbarLabel">{% trans "Navigation Menu" %}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label='{% trans "Close" %}'></button>
             </div>
             <div class="offcanvas-body">
                 <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
 
                     <li class="nav-item">
-                        <a class="nav-link text-light" href="{% url 'home' %}">Dashboard</a>
+                        <a class="nav-link text-light" href="{% url 'home' %}">{% trans "Dashboard" %}</a>
                     </li>
 
 {% if user.is_staff %}
 
                     <li class="nav-item">
-                        <a class="nav-link text-light" href="{% url 'zone-settings' %}">Settings</a>
+                        <a class="nav-link text-light" href="{% url 'zone-settings' %}">{% trans "Settings" %}</a>
                     </li>
 
                 {% endif %}
@@ -53,7 +59,7 @@
                 {% if user.is_superuser %}
 
                     <li class="nav-item">
-                        <a class="nav-link text-light" href="{% url 'statistics' %}">Statistics</a>
+                        <a class="nav-link text-light" href="{% url 'statistics' %}">{% trans "Statistics" %}</a>
                     </li>
 
                     <li class="nav-item">
@@ -67,15 +73,15 @@
                 {% endif %}
 
                     <li class="nav-item">
-                        <a class="nav-link text-light" href="#" data-bs-toggle="modal" data-bs-target="#versionInfoModal" data-bs-dismiss="offcanvas">About</a>
+                        <a class="nav-link text-light" href="#" data-bs-toggle="modal" data-bs-target="#versionInfoModal" data-bs-dismiss="offcanvas">{% trans "About" %}</a>
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link text-light" href="{% url 'logout' %}">Logout</a>
+                        <a class="nav-link text-light" href="{% url 'logout' %}">{% trans "Logout" %}</a>
                     </li>
 
                     <li class="nav-item d-flex align-items-center mt-2 border-top border-secondary pt-2">
-                        <label class="form-check-label text-light me-2" for="darkModeSwitch">Dark Mode</label>
+                        <label class="form-check-label text-light me-2" for="darkModeSwitch">{% trans "Dark Mode" %}</label>
                         <div class="form-check form-switch mb-0">
                             <input class="form-check-input" type="checkbox" id="darkModeSwitch" checked>
                         </div>
@@ -126,7 +132,7 @@
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="zoneHistoryTitle">Zone History</h5>
+                <h5 class="modal-title" id="zoneHistoryTitle">{% trans "Zone History" %}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-0">
@@ -134,13 +140,13 @@
                     <table class="table table-sm table-hover mb-0">
                         <thead class="table-dark">
                             <tr>
-                                <th style="width:160px">Time</th>
-                                <th>Event</th>
-                                <th>User</th>
+                                <th style="width:160px">{% trans "Time" %}</th>
+                                <th>{% trans "Event" %}</th>
+                                <th>{% trans "User" %}</th>
                             </tr>
                         </thead>
                         <tbody id="zoneHistoryBody">
-                            <tr><td colspan="3" class="text-center text-muted py-4">Loading…</td></tr>
+                            <tr><td colspan="3" class="text-center text-muted py-4">{% trans "Loading…" %}</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -182,9 +188,9 @@
     };
 
     window.openZoneHistory = function(zoneId, zoneName) {
-        document.getElementById('zoneHistoryTitle').textContent = 'History \u2014 ' + zoneName;
+        document.getElementById('zoneHistoryTitle').textContent = gettext('History') + ' — ' + zoneName;
         const tbody = document.getElementById('zoneHistoryBody');
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">Loading\u2026</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">' + gettext('Loading…') + '</td></tr>';
 
         const offcanvasEl = document.getElementById('offcanvasDarkNavbar');
         const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
@@ -196,7 +202,7 @@
             .then(r => r.json())
             .then(data => {
                 if (!data.events.length) {
-                    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">No events recorded for this zone.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">' + gettext('No events recorded for this zone.') + '</td></tr>';
                     return;
                 }
                 tbody.innerHTML = data.events.map(function(e) {
@@ -206,7 +212,7 @@
                     const badge = EVENT_BADGE_CLASSES[e.event_type] || '';
                     const user = e.triggered_by
                         ? '<span style="font-size:0.75rem;color:#adb5bd">' + e.triggered_by + '</span>'
-                        : '<span class="text-muted">Panel</span>';
+                        : '<span class="text-muted">' + gettext('Panel') + '</span>';
                     return '<tr>'
                         + '<td class="text-muted" style="font-size:0.8rem;white-space:nowrap">' + ts + '</td>'
                         + '<td><span class="event-badge ' + badge + '">' + e.event_type_display + '</span></td>'
@@ -229,7 +235,7 @@
             <div class="modal-header">
                 <h5 class="modal-title">{{ ness_version_info.title }}</h5>
                 <span class="badge bg-primary ms-2" style="font-size:0.65rem;">{{ ness_version_info.status_badge }}</span>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label='{% trans "Close" %}'></button>
             </div>
             <div class="modal-body p-0">
                 <table class="table table-sm table-hover mb-0">
@@ -243,7 +249,7 @@
                         <td class="pe-3 text-end" style="width:36px;">
                             <button class="btn btn-sm btn-link p-0 text-secondary version-copy-btn"
                                     data-copy-text="{{ row.copy_value }}"
-                                    title="Copy">
+                                    title='{% trans "Copy" %}'>
                                 <i class="bi bi-clipboard" style="font-size:0.8rem;"></i>
                             </button>
                         </td>
@@ -254,9 +260,9 @@
             </div>
             <div class="modal-footer justify-content-between">
                 <button type="button" class="btn btn-outline-secondary btn-sm" id="versionCopyAllBtn">
-                    <i class="bi bi-clipboard me-1"></i>Copy all
+                    <i class="bi bi-clipboard me-1"></i>{% trans "Copy all" %}
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{% trans "Close" %}</button>
             </div>
         </div>
     </div>
@@ -277,8 +283,8 @@
             var el = document.getElementById('nessVersionCopyText');
             var text = el ? JSON.parse(el.textContent) : '';
             navigator.clipboard.writeText(text);
-            copyAllBtn.innerHTML = '<i class="bi bi-clipboard-check me-1"></i>Copied!';
-            setTimeout(function() { copyAllBtn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy all'; }, 1500);
+            copyAllBtn.innerHTML = '<i class="bi bi-clipboard-check me-1"></i>' + gettext('Copied!');
+            setTimeout(function() { copyAllBtn.innerHTML = '<i class="bi bi-clipboard me-1"></i>' + gettext('Copy all'); }, 1500);
         });
     }
 })();

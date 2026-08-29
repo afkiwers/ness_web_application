@@ -1,0 +1,217 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: ness-web 1.0\n"
+"Report-Msgid-Bug-To: \n"
+"POT-Creation-Date: 2026-08-21 00:00+0000\n"
+"PO-Revision-Date: 2026-08-21 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: de\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# ── users/templates/users/login.html ────────────────────────────────────────
+msgid "Ness Panel"
+msgstr "Ness Panel"
+
+msgid "Sign in to access your security panel"
+msgstr "Melden Sie sich an, um auf Ihr Sicherheitspanel zuzugreifen"
+
+msgid "Forgot your password?"
+msgstr "Passwort vergessen?"
+
+msgid "Reset it"
+msgstr "Zurücksetzen"
+
+msgid "Sign In"
+msgstr "Anmelden"
+
+# ── web_resources/template/base-template.html ───────────────────────────────
+msgid "Ness Security Panel"
+msgstr "Ness Sicherheitspanel"
+
+msgid "Navigation Menu"
+msgstr "Navigationsmenü"
+
+msgid "Close"
+msgstr "Schließen"
+
+msgid "Dashboard"
+msgstr "Übersicht"
+
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgid "Statistics"
+msgstr "Statistiken"
+
+msgid "About"
+msgstr "Über"
+
+msgid "Logout"
+msgstr "Abmelden"
+
+msgid "Dark Mode"
+msgstr "Dunkelmodus"
+
+msgid "Zone History"
+msgstr "Zonenverlauf"
+
+msgid "Time"
+msgstr "Zeit"
+
+msgid "Event"
+msgstr "Ereignis"
+
+msgid "User"
+msgstr "Benutzer"
+
+msgid "Loading…"
+msgstr "Wird geladen…"
+
+msgid "History"
+msgstr "Verlauf"
+
+msgid "No events recorded for this zone."
+msgstr "Keine Ereignisse für diese Zone aufgezeichnet."
+
+msgid "Panel"
+msgstr "Panel"
+
+msgid "Copy"
+msgstr "Kopieren"
+
+msgid "Copy all"
+msgstr "Alles kopieren"
+
+msgid "Copied!"
+msgstr "Kopiert!"
+
+# ── ness_comms/templates/ness/index.html ────────────────────────────────────
+msgid "ESP offline — commands will not be processed."
+msgstr "ESP offline — Befehle werden nicht verarbeitet."
+
+msgid "OTA updates are enabled — the ESP may reboot to apply firmware updates."
+msgstr "OTA-Updates sind aktiviert — der ESP kann neu starten, um Firmware-Updates anzuwenden."
+
+msgid "Available Zones"
+msgstr "Verfügbare Zonen"
+
+msgid "ARMING STATE UNKNOWN"
+msgstr "SCHARFSCHALTUNGSSTATUS UNBEKANNT"
+
+msgid "SIREN STATE UNKNOWN"
+msgstr "SIRENENSTATUS UNBEKANNT"
+
+msgid "Unknown State"
+msgstr "Unbekannter Status"
+
+msgid "Exclude"
+msgstr "Ausschließen"
+
+msgid "User Keypad"
+msgstr "Benutzertastatur"
+
+msgid "Security Panel"
+msgstr "Sicherheitspanel"
+
+msgid "Alarm Control Interface"
+msgstr "Alarmsteuerungsschnittstelle"
+
+msgid "PANIC"
+msgstr "PANIK"
+
+msgid "Trigger emergency alarm"
+msgstr "Notfallalarm auslösen"
+
+msgid "ARM OPTIONS"
+msgstr "SCHARFSCHALTUNGSOPTIONEN"
+
+msgid "AWAY"
+msgstr "ABWESEND"
+
+msgid "Full perimeter"
+msgstr "Gesamter Perimeter"
+
+msgid "HOME"
+msgstr "ZUHAUSE"
+
+msgid "Perimeter only"
+msgstr "Nur Perimeter"
+
+msgid "DISARM"
+msgstr "UNSCHARF SCHALTEN"
+
+msgid "Deactivate all zones"
+msgstr "Alle Zonen deaktivieren"
+
+msgid "Acknowledgment Required!"
+msgstr "Bestätigung erforderlich!"
+
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgid "Apply"
+msgstr "Anwenden"
+
+msgid "Emergency Alarm"
+msgstr "Notfallalarm"
+
+msgid "This action cannot be undone"
+msgstr "Diese Aktion kann nicht rückgängig gemacht werden"
+
+msgid "The <strong style=\"color:#fff;\">Panic Alarm</strong> will immediately trigger the NESS security panel."
+msgstr "Der <strong style=\"color:#fff;\">Panikalarm</strong> löst sofort das NESS-Sicherheitspanel aus."
+
+msgid "Only use this in a genuine emergency involving serious harm or threat."
+msgstr "Verwenden Sie dies nur bei einem echten Notfall mit ernsthafter Gefahr oder Bedrohung."
+
+msgid "Set Off The Alarm"
+msgstr "Alarm Auslösen"
+
+msgid "No, Go Back"
+msgstr "Nein, Zurück"
+
+msgid "Connecting to server..."
+msgstr "Verbindung zum Server wird hergestellt..."
+
+msgid "Connection lost. Reconnecting..."
+msgstr "Verbindung verloren. Erneut verbinden..."
+
+msgid "Excluded"
+msgstr "Ausgeschlossen"
+
+msgid "Include"
+msgstr "Einschließen"
+
+msgid "Ready"
+msgstr "Bereit"
+
+msgid "Sensor Triggered"
+msgstr "Sensor Ausgelöst"
+
+msgid "ARMED AWAY"
+msgstr "SCHARF - ABWESEND"
+
+msgid "ARMED HOME"
+msgstr "SCHARF - ZUHAUSE"
+
+msgid "DISARMED"
+msgstr "UNSCHARF"
+
+msgid "ERROR"
+msgstr "FEHLER"
+
+msgid "SIREN ACTIVE"
+msgstr "SIRENE AKTIV"
+
+msgid "SIREN IN STANDBY"
+msgstr "SIRENE IM STANDBY"
+
+msgid "Do you really want to toggle the exclude status of ZONE %(zoneId)s (%(zoneName)s)?"
+msgstr "Möchten Sie den Ausschlussstatus von ZONE %(zoneId)s (%(zoneName)s) wirklich ändern?"
+
+msgid "Panic alarm has been triggered!"
+msgstr "Der Panikalarm wurde ausgelöst!"
