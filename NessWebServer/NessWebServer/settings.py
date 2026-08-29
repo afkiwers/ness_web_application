@@ -43,12 +43,14 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    # Must come after SessionMiddleware and before CommonMiddleware — Django's
+    # documented required ordering for locale detection.
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django.middleware.locale.LocaleMiddleware',
     'axes.middleware.AxesMiddleware',
 ]
 
@@ -146,9 +148,20 @@ REST_FRAMEWORK = {
 
 LANGUAGE_CODE = 'en-us'
 
+# Dashboard interface + login page translations only (Settings stays
+# English) — see the "Language" selector on the login page.
+LANGUAGES = [
+    ('en', 'English'),
+    ('es', 'Español'),
+    ('de', 'Deutsch'),
+]
+LOCALE_PATHS = [
+    os.path.join(BASE_DIR, 'locale'),
+]
+
 TIME_ZONE = 'UTC'
 
-USE_I18N = False
+USE_I18N = True
 
 USE_L10N = True
 

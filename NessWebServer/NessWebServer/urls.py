@@ -17,6 +17,7 @@ from django.contrib import admin
 from django.conf.urls.static import static
 from django.urls import path, include
 from django.views.generic import TemplateView
+from django.views.i18n import JavaScriptCatalog
 from rest_framework.authtoken import views as rest_views
 from django.contrib.auth import views as auth_views
 
@@ -31,6 +32,12 @@ urlpatterns = [
     path('user/', include('users.urls')),
     path('', include('ness_comms.urls')),
     path('locked-out/', locked_out, name='locked-out'),
+
+    # Language selection (login page) — gives the built-in set_language
+    # view at /i18n/setlang/, and the JS translation catalog the dashboard's
+    # inline script uses for runtime-set text (arming state, siren, etc.)
+    path('i18n/', include('django.conf.urls.i18n')),
+    path('jsi18n/', JavaScriptCatalog.as_view(), name='javascript-catalog'),
 
     path('api/', include(main_router.urls)),
     path('api/api-token-auth/', rest_views.obtain_auth_token, name='api-token-auth'),
